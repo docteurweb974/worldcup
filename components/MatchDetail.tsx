@@ -34,7 +34,7 @@ export function MatchDetail({ match }: { match: Match }) {
     o === "home" ? `Victoire ${home.nameFr}` : o === "away" ? `Victoire ${away.nameFr}` : "Match nul";
 
   return (
-    <div className="mx-auto max-w-xl space-y-6 p-4">
+    <div className="mx-auto max-w-xl animate-fade-in space-y-6 p-4">
       <Link href="/calendrier" className="text-sm text-neutral-500 hover:text-accent">
         ← Calendrier
       </Link>

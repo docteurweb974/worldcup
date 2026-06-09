@@ -31,7 +31,7 @@ export function HomeContent({ matches }: { matches: SlimMatch[] }) {
 
   if (!team) {
     return (
-      <div style={accentVars} className="mx-auto flex max-w-2xl flex-col gap-6 p-4 sm:p-6">
+      <div style={accentVars} className="mx-auto flex max-w-2xl animate-fade-in flex-col gap-6 p-4 sm:p-6">
         <header className="text-center">
           <h1 className="text-2xl font-bold sm:text-3xl">
             Coupe du Monde 2026 <span aria-hidden="true">🏆</span>
@@ -48,7 +48,7 @@ export function HomeContent({ matches }: { matches: SlimMatch[] }) {
   return (
     <section
       style={{ ...accentVars, backgroundImage: `url(${flagUrl(team.id)})` }}
-      className="relative isolate -mb-20 flex min-h-[80vh] flex-col items-center justify-center gap-6 overflow-hidden bg-cover bg-center p-4 md:-mb-6"
+      className="relative isolate -mb-20 flex min-h-[80vh] animate-fade-in flex-col items-center justify-center gap-6 overflow-hidden bg-cover bg-center p-4 md:-mb-6"
     >
       {/* Voile dégradé : garde le texte lisible quel que soit le drapeau. */}
       <div

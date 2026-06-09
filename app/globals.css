@@ -19,6 +19,17 @@ html {
 
 body {
   @apply bg-white text-neutral-900 antialiased;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Respecte la préférence système de réduction des animations. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
 }
 
 .dark body {

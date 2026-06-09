@@ -64,7 +64,7 @@ export function CalendarView({ matches }: { matches: Match[] }) {
   const allFavoriteMatches = groups.flat();
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6 p-4">
+    <div className="mx-auto max-w-2xl animate-fade-in space-y-6 p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-xl font-bold">Calendrier 📅</h1>
         <IcsButton

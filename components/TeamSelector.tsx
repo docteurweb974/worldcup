@@ -29,7 +29,7 @@ export function TeamSelector() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl p-4">
+    <div className="mx-auto max-w-3xl animate-fade-in p-4">
       <div className="mb-3 flex items-baseline justify-between gap-2">
         <h1 className="text-xl font-bold">Mes équipes ⭐</h1>
         <span className="text-sm text-neutral-500">

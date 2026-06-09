@@ -3,10 +3,41 @@ import "./globals.css";
 import { PreferencesProvider } from "@/components/PreferencesProvider";
 import { AppShell } from "@/components/AppShell";
 
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ??
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
+
+const title = "World Cup Fun — Coupe du Monde 2026";
+const description =
+  "Suivez la Coupe du Monde 2026 : matchs de vos équipes favorites, scores en direct, classements et pronostics. Heures affichées à l'heure de France ou de La Réunion.";
+
 export const metadata: Metadata = {
-  title: "World Cup Fun — Coupe du Monde 2026",
-  description:
-    "Suivez la Coupe du Monde 2026 : matchs de vos équipes favorites, scores en direct, classements et pronostics. Heures à l'heure de France ou de La Réunion 🌴.",
+  metadataBase: new URL(siteUrl),
+  title,
+  description,
+  applicationName: "World Cup Fun",
+  keywords: [
+    "Coupe du Monde 2026",
+    "football",
+    "calendrier",
+    "scores en direct",
+    "classements",
+    "pronostics",
+    "La Réunion",
+  ],
+  openGraph: {
+    title,
+    description,
+    type: "website",
+    locale: "fr_FR",
+    siteName: "World Cup Fun",
+    url: siteUrl,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title,
+    description,
+  },
 };
 
 export const viewport: Viewport = {

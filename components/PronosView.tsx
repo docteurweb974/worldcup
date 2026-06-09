@@ -57,7 +57,7 @@ export function PronosView({ matches }: { matches: Match[] }) {
   const rate = evaluated.length > 0 ? Math.round((100 * correct) / evaluated.length) : 0;
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6 p-4">
+    <div className="mx-auto max-w-2xl animate-fade-in space-y-6 p-4">
       <h1 className="text-xl font-bold">Mes pronos 🎯</h1>
 
       {evaluated.length > 0 && (
