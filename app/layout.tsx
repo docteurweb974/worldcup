@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { PreferencesProvider } from "@/components/PreferencesProvider";
+import { AppShell } from "@/components/AppShell";
 
 export const metadata: Metadata = {
   title: "World Cup Fun — Coupe du Monde 2026",
@@ -38,7 +40,11 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
-      <body>{children}</body>
+      <body>
+        <PreferencesProvider>
+          <AppShell>{children}</AppShell>
+        </PreferencesProvider>
+      </body>
     </html>
   );
 }
