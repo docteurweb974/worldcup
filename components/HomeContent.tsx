@@ -2,6 +2,7 @@
 
 import type { CSSProperties } from "react";
 import { Countdown, type SlimMatch } from "./Countdown";
+import { LeaderboardTeaser } from "./LeaderboardTeaser";
 import { usePreferences } from "./PreferencesProvider";
 import { getPalette } from "@/data/countryColors";
 import { accessibleAccent } from "@/lib/colors";
@@ -33,14 +34,13 @@ export function HomeContent({ matches }: { matches: SlimMatch[] }) {
     return (
       <div style={accentVars} className="mx-auto flex max-w-2xl animate-fade-in flex-col gap-6 p-4 sm:p-6">
         <header className="text-center">
-          <h1 className="text-2xl font-bold sm:text-3xl">
-            Coupe du Monde 2026 <span aria-hidden="true">🏆</span>
-          </h1>
+          <h1 className="text-2xl font-bold sm:text-3xl">Coupe du Monde 2026</h1>
           <p className="mt-1 text-neutral-600 dark:text-neutral-400">
             Suivez vos équipes, du coup d&apos;envoi à la finale.
           </p>
         </header>
         <Countdown matches={matches} />
+        <LeaderboardTeaser />
       </div>
     );
   }
@@ -61,14 +61,15 @@ export function HomeContent({ matches }: { matches: SlimMatch[] }) {
           {team.flag}
         </span>
         <h1 className="mt-2 text-3xl font-bold sm:text-4xl">{team.nameFr}</h1>
-        <p className="mt-1 text-white/90">
-          Coupe du Monde 2026 <span aria-hidden="true">🏆</span>
-        </p>
+        <p className="mt-1 text-white/90">Coupe du Monde 2026</p>
       </header>
 
       {/* Panneau clair pour que le compte à rebours reste lisible sur l'image. */}
       <div className="w-full max-w-md rounded-2xl bg-white/90 p-2 shadow-xl backdrop-blur dark:bg-neutral-900/90">
         <Countdown matches={matches} />
+      </div>
+      <div className="w-full max-w-md">
+        <LeaderboardTeaser />
       </div>
     </section>
   );

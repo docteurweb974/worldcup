@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import Link from "next/link";
 import { usePreferences } from "./PreferencesProvider";
+import { LeaderboardTeaser } from "./LeaderboardTeaser";
 import { usePredictions } from "@/hooks/usePredictions";
 import { formatFull } from "@/lib/timezone";
 import { displayTeam } from "@/data/teams";
@@ -57,7 +58,7 @@ export function PronosView({ matches }: { matches: Match[] }) {
 
   if (evaluated.length === 0 && pending.length === 0) {
     return (
-      <div className="mx-auto max-w-md p-6">
+      <div className="mx-auto max-w-md space-y-4 p-6">
         <Link
           href="/calendrier"
           className="block rounded-2xl border border-dashed border-neutral-300 p-6 text-center dark:border-neutral-700"
@@ -67,6 +68,7 @@ export function PronosView({ matches }: { matches: Match[] }) {
             Ouvrez un match à venir pour pronostiquer un score.
           </p>
         </Link>
+        <LeaderboardTeaser />
       </div>
     );
   }
@@ -91,6 +93,8 @@ export function PronosView({ matches }: { matches: Match[] }) {
         <PronoList title="Terminés" items={evaluated} timezone={timezone} showResult />
       )}
       {pending.length > 0 && <PronoList title="En attente" items={pending} timezone={timezone} />}
+
+      <LeaderboardTeaser />
     </div>
   );
 }
