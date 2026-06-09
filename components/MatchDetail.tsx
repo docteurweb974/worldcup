@@ -1,19 +1,29 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { usePreferences } from "./PreferencesProvider";
 import { ScorePicker } from "./ScorePicker";
 import { IcsButton } from "./IcsButton";
-import { usePredictions } from "@/hooks/usePredictions";
+import { savePrediction } from "@/app/predictions/actions";
 import { formatFull } from "@/lib/timezone";
 import { calendarFilename } from "@/lib/ics";
 import { displayTeam } from "@/data/teams";
 import { formatGroup, isFinished, isLive, type Match } from "@/lib/api";
 import { POINTS, predictionPoints, type ScorePrediction } from "@/lib/predictions";
 
-export function MatchDetail({ match }: { match: Match }) {
+export function MatchDetail({
+  match,
+  prediction,
+  isLoggedIn,
+}: {
+  match: Match;
+  prediction: ScorePrediction | null;
+  isLoggedIn: boolean;
+}) {
   const { timezone } = usePreferences();
-  const { getPrediction, setPrediction, hydrated } = usePredictions();
+  const router = useRouter();
 
   const home = displayTeam(match.homeTeam.id, match.homeTeam.name);
   const away = displayTeam(match.awayTeam.id, match.awayTeam.name);
@@ -23,7 +33,25 @@ export function MatchDetail({ match }: { match: Match }) {
   const { home: hScore, away: aScore } = match.score.fullTime;
   const showScore = (live || finished) && hScore != null && aScore != null;
 
-  const prediction = getPrediction(match.id);
+  const [score, setScore] = useState<ScorePrediction>(prediction ?? { home: 0, away: 0 });
+  const [savedScore, setSavedScore] = useState<ScorePrediction | null>(prediction);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const isDirty =
+    !savedScore || savedScore.home !== score.home || savedScore.away !== score.away;
+
+  const onSave = async () => {
+    setSaving(true);
+    setError(null);
+    const res = await savePrediction(match.id, score.home, score.away);
+    setSaving(false);
+    if (res?.error) setError(res.error);
+    else {
+      setSavedScore({ ...score });
+      router.refresh(); // met à jour les points dans l'en-tête
+    }
+  };
 
   return (
     <div className="mx-auto max-w-xl animate-fade-in space-y-6 p-4">
@@ -63,26 +91,46 @@ export function MatchDetail({ match }: { match: Match }) {
       <section className="rounded-2xl border border-neutral-200 p-4 dark:border-neutral-800">
         <h2 className="mb-3 font-bold">Mon pronostic 🎯</h2>
 
-        {!hydrated ? (
-          <div className="h-24 animate-pulse rounded-xl bg-neutral-200 dark:bg-neutral-800" />
+        {canPredict && !isLoggedIn ? (
+          <Link
+            href="/connexion"
+            className="block rounded-xl border border-dashed border-neutral-300 p-4 text-center text-sm dark:border-neutral-700"
+          >
+            <span className="font-medium">Connecte-toi pour pronostiquer</span>
+            <span className="mt-1 block text-neutral-500">
+              Ton score comptera au classement.
+            </span>
+          </Link>
         ) : canPredict ? (
-          <>
-            <ScorePicker
-              home={home}
-              away={away}
-              value={prediction}
-              onChange={(score) => setPrediction(match.id, score)}
-            />
-            <p className="mt-3 text-center text-xs text-neutral-500">
+          <div className="space-y-3">
+            <ScorePicker home={home} away={away} value={score} onChange={setScore} />
+            {error && (
+              <p role="alert" className="text-center text-sm text-red-600 dark:text-red-400">
+                {error}
+              </p>
+            )}
+            <button
+              type="button"
+              onClick={onSave}
+              disabled={saving || !isDirty}
+              className="min-h-tap w-full cursor-pointer rounded-xl bg-cta font-semibold text-cta-fg transition hover:brightness-110 disabled:opacity-50"
+            >
+              {saving
+                ? "Enregistrement…"
+                : isDirty
+                  ? "Enregistrer mon pronostic"
+                  : "✓ Pronostic enregistré"}
+            </button>
+            <p className="text-center text-xs text-neutral-500">
               Score exact : {POINTS.exact} pts · bon résultat : {POINTS.outcome} pts.
             </p>
-          </>
+          </div>
         ) : finished ? (
-          <PredictionResult match={match} prediction={prediction} />
+          <PredictionResult match={match} prediction={savedScore} />
         ) : (
           <p className="text-sm text-neutral-500">
             Match en cours — pronostic clôturé.
-            {prediction && ` Votre pari : ${prediction.home} - ${prediction.away}.`}
+            {savedScore && ` Ton pari : ${savedScore.home} - ${savedScore.away}.`}
           </p>
         )}
       </section>
@@ -104,10 +152,10 @@ function PredictionResult({
   prediction,
 }: {
   match: Match;
-  prediction: ScorePrediction | undefined;
+  prediction: ScorePrediction | null;
 }) {
   if (!prediction) {
-    return <p className="text-sm text-neutral-500">Vous n&apos;avez pas parié sur ce match.</p>;
+    return <p className="text-sm text-neutral-500">Tu n&apos;as pas parié sur ce match.</p>;
   }
   const pts = predictionPoints(prediction, match) ?? 0;
   const tone =
@@ -118,14 +166,13 @@ function PredictionResult({
         : "text-red-600 dark:text-red-400";
   const message =
     pts === POINTS.exact ? "Score exact !" : pts === POINTS.outcome ? "Bon résultat" : "Raté";
-
   return (
     <div className="space-y-1 text-sm">
       <p className={`text-lg font-bold ${tone}`}>
         +{pts} pt{pts > 1 ? "s" : ""} · {message}
       </p>
       <p className="text-neutral-500">
-        Votre pronostic : {prediction.home} - {prediction.away}
+        Ton pronostic : {prediction.home} - {prediction.away}
       </p>
     </div>
   );

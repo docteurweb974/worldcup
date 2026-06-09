@@ -3,17 +3,14 @@
 import { useMemo } from "react";
 import Link from "next/link";
 import { usePreferences } from "./PreferencesProvider";
-import { LeaderboardTeaser } from "./LeaderboardTeaser";
-import { usePredictions } from "@/hooks/usePredictions";
 import { formatFull } from "@/lib/timezone";
 import { displayTeam } from "@/data/teams";
 import { isFinished, type Match } from "@/lib/api";
-import {
-  POINTS,
-  isValidPrediction,
-  predictionPoints,
-  type ScorePrediction,
-} from "@/lib/predictions";
+import { POINTS, predictionPoints, type ScorePrediction } from "@/lib/predictions";
+
+export interface DbPrediction extends ScorePrediction {
+  matchId: number;
+}
 
 interface PronoItem {
   match: Match;
@@ -21,16 +18,21 @@ interface PronoItem {
   points: number | null;
 }
 
-export function PronosView({ matches }: { matches: Match[] }) {
+export function PronosView({
+  predictions,
+  matches,
+}: {
+  predictions: DbPrediction[];
+  matches: Match[];
+}) {
   const { timezone } = usePreferences();
-  const { predictions, hydrated } = usePredictions();
 
   const { evaluated, pending, total, exact, good } = useMemo(() => {
     const byId = new Map(matches.map((m) => [m.id, m]));
-    const items: PronoItem[] = Object.entries(predictions)
-      .filter(([, pred]) => isValidPrediction(pred))
-      .map(([id, pred]) => {
-        const match = byId.get(Number(id));
+    const items: PronoItem[] = predictions
+      .map((p) => {
+        const match = byId.get(p.matchId);
+        const pred = { home: p.home, away: p.away };
         return match ? { match, pred, points: predictionPoints(pred, match) } : null;
       })
       .filter((x): x is PronoItem => x !== null);
@@ -44,17 +46,7 @@ export function PronosView({ matches }: { matches: Match[] }) {
       exact: ev.filter((x) => x.points === POINTS.exact).length,
       good: ev.filter((x) => x.points === POINTS.outcome).length,
     };
-  }, [matches, predictions]);
-
-  if (!hydrated) {
-    return (
-      <div className="mx-auto max-w-2xl space-y-3 p-4">
-        {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="h-16 animate-pulse rounded-xl bg-neutral-200 dark:bg-neutral-800" />
-        ))}
-      </div>
-    );
-  }
+  }, [predictions, matches]);
 
   if (evaluated.length === 0 && pending.length === 0) {
     return (
@@ -65,10 +57,9 @@ export function PronosView({ matches }: { matches: Match[] }) {
         >
           <p className="font-medium">Aucun pronostic pour l&apos;instant 🎯</p>
           <p className="mt-1 text-sm text-neutral-500">
-            Ouvrez un match à venir pour pronostiquer un score.
+            Ouvre un match à venir pour pronostiquer un score.
           </p>
         </Link>
-        <LeaderboardTeaser />
       </div>
     );
   }
@@ -93,8 +84,6 @@ export function PronosView({ matches }: { matches: Match[] }) {
         <PronoList title="Terminés" items={evaluated} timezone={timezone} showResult />
       )}
       {pending.length > 0 && <PronoList title="En attente" items={pending} timezone={timezone} />}
-
-      <LeaderboardTeaser />
     </div>
   );
 }

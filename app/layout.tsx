@@ -3,6 +3,7 @@ import { Barlow, Barlow_Condensed } from "next/font/google";
 import "./globals.css";
 import { PreferencesProvider } from "@/components/PreferencesProvider";
 import { AppShell } from "@/components/AppShell";
+import { getAccountSummary } from "@/lib/account";
 
 // Typo « athletic / competition » recommandée par le skill ui-ux-pro-max :
 // Barlow Condensed (titres) + Barlow (corps).
@@ -77,11 +78,12 @@ const themeInitScript = `
 })();
 `;
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const account = await getAccountSummary();
   return (
     <html lang="fr" className={`${display.variable} ${body.variable}`} suppressHydrationWarning>
       <head>
@@ -89,7 +91,7 @@ export default function RootLayout({
       </head>
       <body>
         <PreferencesProvider>
-          <AppShell>{children}</AppShell>
+          <AppShell account={account}>{children}</AppShell>
         </PreferencesProvider>
       </body>
     </html>

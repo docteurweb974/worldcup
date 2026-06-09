@@ -2,11 +2,12 @@
 
 import type { CSSProperties } from "react";
 import { Countdown, type SlimMatch } from "./Countdown";
-import { LeaderboardTeaser } from "./LeaderboardTeaser";
+import { LeaderboardPreview } from "./LeaderboardPreview";
 import { usePreferences } from "./PreferencesProvider";
 import { getPalette } from "@/data/countryColors";
 import { accessibleAccent } from "@/lib/colors";
 import { TEAM_BY_TLA } from "@/data/teams";
+import type { LeaderboardEntry } from "@/lib/leaderboard";
 
 /** Image de drapeau pleine page (football-data, SVG vectoriel net). */
 const flagUrl = (id: number) => `https://crests.football-data.org/${id}.svg`;
@@ -16,7 +17,15 @@ const flagUrl = (id: number) => `https://crests.football-data.org/${id}.svg`;
  * fond d'écran à l'effigie du pays (son drapeau), avec un voile sombre pour la
  * lisibilité. Sans favori : version neutre. L'accent reste scopé à la home.
  */
-export function HomeContent({ matches }: { matches: SlimMatch[] }) {
+export function HomeContent({
+  matches,
+  leaderboard,
+  currentUserId,
+}: {
+  matches: SlimMatch[];
+  leaderboard: LeaderboardEntry[];
+  currentUserId: string | null;
+}) {
   const { favorites } = usePreferences();
   const firstTla = favorites[0];
   const team = firstTla ? TEAM_BY_TLA[firstTla] : undefined;
@@ -42,7 +51,7 @@ export function HomeContent({ matches }: { matches: SlimMatch[] }) {
           </p>
         </header>
         <Countdown matches={matches} />
-        <LeaderboardTeaser />
+        <LeaderboardPreview entries={leaderboard} currentUserId={currentUserId} />
       </div>
     );
   }
@@ -75,7 +84,7 @@ export function HomeContent({ matches }: { matches: SlimMatch[] }) {
         <Countdown matches={matches} />
       </div>
       <div className="w-full max-w-md">
-        <LeaderboardTeaser />
+        <LeaderboardPreview entries={leaderboard} currentUserId={currentUserId} />
       </div>
     </section>
   );
