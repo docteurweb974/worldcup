@@ -34,7 +34,9 @@ export function HomeContent({ matches }: { matches: SlimMatch[] }) {
     return (
       <div style={accentVars} className="mx-auto flex max-w-2xl animate-fade-in flex-col gap-6 p-4 sm:p-6">
         <header className="text-center">
-          <h1 className="text-2xl font-bold sm:text-3xl">Coupe du Monde 2026</h1>
+          <h1 className="text-4xl font-bold uppercase tracking-tight sm:text-5xl">
+            Coupe du Monde 2026
+          </h1>
           <p className="mt-1 text-neutral-600 dark:text-neutral-400">
             Suivez vos équipes, du coup d&apos;envoi à la finale.
           </p>
@@ -60,8 +62,12 @@ export function HomeContent({ matches }: { matches: SlimMatch[] }) {
         <span className="text-5xl" aria-hidden="true">
           {team.flag}
         </span>
-        <h1 className="mt-2 text-3xl font-bold sm:text-4xl">{team.nameFr}</h1>
-        <p className="mt-1 text-white/90">Coupe du Monde 2026</p>
+        <h1 className="mt-2 text-5xl font-bold uppercase tracking-tight sm:text-6xl">
+          {team.nameFr}
+        </h1>
+        <p className="mt-1 font-semibold uppercase tracking-[0.2em] text-white/90">
+          Coupe du Monde 2026
+        </p>
       </header>
 
       {/* Panneau clair pour que le compte à rebours reste lisible sur l'image. */}
