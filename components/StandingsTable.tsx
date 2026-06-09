@@ -46,7 +46,7 @@ export function StandingsTable({ group }: { group: StandingGroup }) {
                 <tr
                   key={row.team.id ?? row.position}
                   className={`border-t border-neutral-100 dark:border-neutral-900 ${
-                    isFav ? "bg-accent-soft font-semibold" : ""
+                    isFav ? "bg-accent-soft font-semibold text-neutral-900" : ""
                   }`}
                 >
                   <td className="px-2 py-2 tabular-nums">{row.position}</td>
