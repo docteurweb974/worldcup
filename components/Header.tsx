@@ -8,23 +8,19 @@ import type { AccountSummary } from "@/lib/account";
 
 export function Header({ account }: { account: AccountSummary | null }) {
   return (
-    <header className="sticky top-0 z-20 grid grid-cols-3 items-center gap-2 border-b border-neutral-200 bg-white/90 px-4 py-2 backdrop-blur dark:border-neutral-800 dark:bg-neutral-950/90">
-      <div className="flex items-center gap-2 justify-self-start">
+    <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-neutral-200 bg-white/90 px-4 py-2 backdrop-blur dark:border-neutral-800 dark:bg-neutral-950/90">
+      <div className="flex min-w-0 items-center gap-2">
         <ThemeToggle />
+        <TimezoneToggle />
         <Link
           href="/"
-          className="hidden font-display text-lg uppercase tracking-wide sm:inline"
+          className="hidden font-display text-lg uppercase tracking-wide lg:inline"
           aria-label="World Cup Fun, accueil"
         >
           World Cup Fun
         </Link>
       </div>
-      <div className="justify-self-center">
-        <TimezoneToggle />
-      </div>
-      <div className="justify-self-end">
-        <AuthButton account={account} />
-      </div>
+      <AuthButton account={account} />
     </header>
   );
 }

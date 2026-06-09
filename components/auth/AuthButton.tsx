@@ -18,7 +18,7 @@ export function AuthButton({ account }: { account: AccountSummary | null }) {
   return (
     <div className="flex items-center gap-2">
       <Link href="/pronos" className="text-right leading-tight">
-        <span className="block max-w-[7rem] truncate text-sm font-semibold" title={account.username}>
+        <span className="block max-w-[9rem] truncate text-sm font-semibold sm:max-w-[14rem]" title={account.username}>
           {account.username}
         </span>
         <span className="block text-xs font-semibold text-accent">{account.points} pts</span>
