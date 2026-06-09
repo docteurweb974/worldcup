@@ -2,20 +2,14 @@
 
 import Link from "next/link";
 import { usePreferences } from "./PreferencesProvider";
-import { PredictionButtons } from "./PredictionButtons";
+import { ScorePicker } from "./ScorePicker";
 import { IcsButton } from "./IcsButton";
 import { usePredictions } from "@/hooks/usePredictions";
 import { formatFull } from "@/lib/timezone";
 import { calendarFilename } from "@/lib/ics";
 import { displayTeam } from "@/data/teams";
-import {
-  formatGroup,
-  isFinished,
-  isLive,
-  outcomeFromWinner,
-  type Match,
-  type Outcome,
-} from "@/lib/api";
+import { formatGroup, isFinished, isLive, type Match } from "@/lib/api";
+import { POINTS, predictionPoints, type ScorePrediction } from "@/lib/predictions";
 
 export function MatchDetail({ match }: { match: Match }) {
   const { timezone } = usePreferences();
@@ -30,8 +24,6 @@ export function MatchDetail({ match }: { match: Match }) {
   const showScore = (live || finished) && hScore != null && aScore != null;
 
   const prediction = getPrediction(match.id);
-  const label = (o: Outcome) =>
-    o === "home" ? `Victoire ${home.nameFr}` : o === "away" ? `Victoire ${away.nameFr}` : "Match nul";
 
   return (
     <div className="mx-auto max-w-xl animate-fade-in space-y-6 p-4">
@@ -72,20 +64,25 @@ export function MatchDetail({ match }: { match: Match }) {
         <h2 className="mb-3 font-bold">Mon pronostic 🎯</h2>
 
         {!hydrated ? (
-          <div className="h-12 animate-pulse rounded-xl bg-neutral-200 dark:bg-neutral-800" />
+          <div className="h-24 animate-pulse rounded-xl bg-neutral-200 dark:bg-neutral-800" />
         ) : canPredict ? (
-          <PredictionButtons
-            homeName={home.nameFr}
-            awayName={away.nameFr}
-            value={prediction}
-            onChange={(choice) => setPrediction(match.id, choice)}
-          />
+          <>
+            <ScorePicker
+              home={home}
+              away={away}
+              value={prediction}
+              onChange={(score) => setPrediction(match.id, score)}
+            />
+            <p className="mt-3 text-center text-xs text-neutral-500">
+              Score exact : {POINTS.exact} pts · bon résultat : {POINTS.outcome} pts.
+            </p>
+          </>
         ) : finished ? (
-          <PredictionResult prediction={prediction} actual={outcomeFromWinner(match.score.winner)} label={label} />
+          <PredictionResult match={match} prediction={prediction} />
         ) : (
           <p className="text-sm text-neutral-500">
             Match en cours — pronostic clôturé.
-            {prediction && ` Votre pari : ${label(prediction)}.`}
+            {prediction && ` Votre pari : ${prediction.home} - ${prediction.away}.`}
           </p>
         )}
       </section>
@@ -101,31 +98,35 @@ export function MatchDetail({ match }: { match: Match }) {
   );
 }
 
-/** Comparaison pronostic / résultat réel après la fin du match. */
+/** Comparaison pronostic / résultat réel + points gagnés, après la fin du match. */
 function PredictionResult({
+  match,
   prediction,
-  actual,
-  label,
 }: {
-  prediction: Outcome | undefined;
-  actual: Outcome | null;
-  label: (o: Outcome) => string;
+  match: Match;
+  prediction: ScorePrediction | undefined;
 }) {
   if (!prediction) {
     return <p className="text-sm text-neutral-500">Vous n&apos;avez pas parié sur ce match.</p>;
   }
-  const correct = actual != null && prediction === actual;
+  const pts = predictionPoints(prediction, match) ?? 0;
+  const tone =
+    pts === POINTS.exact
+      ? "text-green-600 dark:text-green-400"
+      : pts === POINTS.outcome
+        ? "text-amber-600 dark:text-amber-400"
+        : "text-red-600 dark:text-red-400";
+  const message =
+    pts === POINTS.exact ? "Score exact !" : pts === POINTS.outcome ? "Bon résultat" : "Raté";
+
   return (
     <div className="space-y-1 text-sm">
-      <p
-        className={`font-semibold ${
-          correct ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
-        }`}
-      >
-        {correct ? "✓ Pronostic réussi" : "✗ Pronostic raté"}
+      <p className={`text-lg font-bold ${tone}`}>
+        +{pts} pt{pts > 1 ? "s" : ""} · {message}
       </p>
-      <p className="text-neutral-500">Votre pari : {label(prediction)}</p>
-      {actual && <p className="text-neutral-500">Résultat : {label(actual)}</p>}
+      <p className="text-neutral-500">
+        Votre pronostic : {prediction.home} - {prediction.away}
+      </p>
     </div>
   );
 }

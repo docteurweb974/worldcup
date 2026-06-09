@@ -2,11 +2,11 @@
 
 import { useCallback } from "react";
 import { useLocalStorage } from "./useLocalStorage";
-import type { Outcome } from "@/lib/api";
+import { isValidPrediction, type ScorePrediction } from "@/lib/predictions";
 
-export type Predictions = Record<string, Outcome>;
+export type Predictions = Record<string, ScorePrediction>;
 
-/** Gestion des pronostics, persistés en localStorage sous « predictions ». */
+/** Gestion des pronostics (scores), persistés en localStorage sous « predictions ». */
 export function usePredictions() {
   const [predictions, setPredictions, hydrated] = useLocalStorage<Predictions>(
     "predictions",
@@ -14,13 +14,16 @@ export function usePredictions() {
   );
 
   const setPrediction = useCallback(
-    (matchId: number, choice: Outcome) =>
-      setPredictions((prev) => ({ ...prev, [matchId]: choice })),
+    (matchId: number, score: ScorePrediction) =>
+      setPredictions((prev) => ({ ...prev, [matchId]: score })),
     [setPredictions],
   );
 
   const getPrediction = useCallback(
-    (matchId: number): Outcome | undefined => predictions[matchId],
+    (matchId: number): ScorePrediction | undefined => {
+      const p = predictions[matchId];
+      return isValidPrediction(p) ? p : undefined;
+    },
     [predictions],
   );
 
