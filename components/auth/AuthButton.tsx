@@ -1,50 +1,10 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
 import { logout } from "@/app/auth/actions";
+import type { AccountSummary } from "@/lib/account";
 
-/** Indicateur d'état d'authentification dans l'en-tête. */
-export function AuthButton() {
-  const [username, setUsername] = useState<string | null>(null);
-  const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    const supabase = createClient();
-    let active = true;
-
-    const load = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!active) return;
-      if (user) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("username")
-          .eq("id", user.id)
-          .maybeSingle();
-        setUsername(profile?.username ?? "Compte");
-      } else {
-        setUsername(null);
-      }
-      setReady(true);
-    };
-
-    load();
-    const { data: sub } = supabase.auth.onAuthStateChange(() => load());
-    return () => {
-      active = false;
-      sub.subscription.unsubscribe();
-    };
-  }, []);
-
-  if (!ready) {
-    return <div className="h-tap w-20 animate-pulse rounded-full bg-neutral-200 dark:bg-neutral-800" />;
-  }
-
-  if (!username) {
+/** Indicateur d'authentification dans l'en-tête (état calculé côté serveur). */
+export function AuthButton({ account }: { account: AccountSummary | null }) {
+  if (!account) {
     return (
       <Link
         href="/connexion"
@@ -57,15 +17,23 @@ export function AuthButton() {
 
   return (
     <div className="flex items-center gap-2">
-      <span className="max-w-[6rem] truncate text-sm font-semibold" title={username}>
-        {username}
-      </span>
+      <Link href="/pronos" className="text-right leading-tight">
+        <span className="block max-w-[7rem] truncate text-sm font-semibold" title={account.username}>
+          {account.username}
+        </span>
+        <span className="block text-xs font-semibold text-accent">{account.points} pts</span>
+      </Link>
       <form action={logout}>
         <button
           type="submit"
-          className="cursor-pointer text-xs text-neutral-500 underline-offset-2 hover:underline"
+          aria-label="Se déconnecter"
+          title="Se déconnecter"
+          className="grid h-tap w-tap cursor-pointer place-items-center rounded-full text-neutral-500 transition-colors hover:bg-neutral-200 dark:hover:bg-neutral-800"
         >
-          Déconnexion
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" aria-hidden="true">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <path d="m16 17 5-5-5-5M21 12H9" />
+          </svg>
         </button>
       </form>
     </div>
