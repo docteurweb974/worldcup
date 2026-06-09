@@ -1,5 +1,7 @@
-import { PagePlaceholder } from "@/components/PagePlaceholder";
+import { getMatches } from "@/lib/api";
+import { CalendarView } from "@/components/CalendarView";
 
-export default function CalendrierPage() {
-  return <PagePlaceholder title="Calendrier 📅" step="étape 4" />;
+export default async function CalendrierPage() {
+  const matches = await getMatches();
+  return <CalendarView matches={matches} />;
 }

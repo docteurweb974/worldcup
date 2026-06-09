@@ -1,5 +1,5 @@
-import { PagePlaceholder } from "@/components/PagePlaceholder";
+import { TeamSelector } from "@/components/TeamSelector";
 
 export default function EquipesPage() {
-  return <PagePlaceholder title="Mes équipes ⭐" step="étape 4" />;
+  return <TeamSelector />;
 }
