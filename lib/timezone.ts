@@ -16,7 +16,7 @@ export const TIMEZONES: Record<TimezoneChoice, string> = {
 
 export const TIMEZONE_LABELS: Record<TimezoneChoice, string> = {
   france: "France 🇫🇷",
-  pei: "Péi 🌴",
+  pei: "Réunion 🇷🇪",
 };
 
 /** Composantes d'une date « éclatées » dans un fuseau donné. */
