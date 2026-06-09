@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+  Variables CSS globales.
+  --color-accent / --color-accent-soft sont surchargées dynamiquement au runtime
+  selon l'équipe favorite de l'utilisateur (étape 6 : couleurs adaptatives).
+  Valeurs par défaut : bleu neutre.
+*/
+:root {
+  --color-accent: #2563eb;
+  --color-accent-soft: #dbeafe;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  @apply bg-white text-neutral-900 antialiased;
+}
+
+.dark body {
+  @apply bg-neutral-950 text-neutral-100;
+}
