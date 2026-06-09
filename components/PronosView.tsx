@@ -3,7 +3,6 @@
 import { useMemo } from "react";
 import Link from "next/link";
 import { usePreferences } from "./PreferencesProvider";
-import { LeaderboardTeaser } from "./LeaderboardTeaser";
 import { formatFull } from "@/lib/timezone";
 import { displayTeam } from "@/data/teams";
 import { isFinished, type Match } from "@/lib/api";
@@ -61,7 +60,6 @@ export function PronosView({
             Ouvre un match à venir pour pronostiquer un score.
           </p>
         </Link>
-        <LeaderboardTeaser />
       </div>
     );
   }
@@ -86,8 +84,6 @@ export function PronosView({
         <PronoList title="Terminés" items={evaluated} timezone={timezone} showResult />
       )}
       {pending.length > 0 && <PronoList title="En attente" items={pending} timezone={timezone} />}
-
-      <LeaderboardTeaser />
     </div>
   );
 }

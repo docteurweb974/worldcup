@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { getMatches } from "@/lib/api";
 import { createClient } from "@/lib/supabase/server";
+import { getLeaderboard } from "@/lib/leaderboard";
 import { PronosView, type DbPrediction } from "@/components/PronosView";
 import { ImportLocalPredictions } from "@/components/ImportLocalPredictions";
+import { Leaderboard } from "@/components/Leaderboard";
 
 export default async function PronosPage() {
   const supabase = createClient();
@@ -29,9 +31,10 @@ export default async function PronosPage() {
     );
   }
 
-  const [{ data: preds }, matches] = await Promise.all([
+  const [{ data: preds }, matches, leaderboard] = await Promise.all([
     supabase.from("predictions").select("match_id, home, away").eq("user_id", user.id),
     getMatches(),
+    getLeaderboard(),
   ]);
 
   const predictions: DbPrediction[] = (preds ?? []).map((p) => ({
@@ -46,6 +49,9 @@ export default async function PronosPage() {
         <ImportLocalPredictions />
       </div>
       <PronosView predictions={predictions} matches={matches} />
+      <div className="mx-auto max-w-2xl px-4 pb-4">
+        <Leaderboard entries={leaderboard} currentUserId={user.id} />
+      </div>
     </div>
   );
 }
