@@ -6,10 +6,16 @@ import type { SlimMatch } from "@/components/Countdown";
 
 export default async function HomePage() {
   const supabase = createClient();
-  const [matches, leaderboard, userRes] = await Promise.all([
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const [matches, leaderboard, profileRes] = await Promise.all([
     getMatches(),
     getLeaderboard(),
-    supabase.auth.getUser(),
+    user
+      ? supabase.from("profiles").select("favorite_team").eq("id", user.id).maybeSingle()
+      : Promise.resolve({ data: null }),
   ]);
 
   const slim: SlimMatch[] = matches.map((m) => ({
@@ -23,7 +29,8 @@ export default async function HomePage() {
     <HomeContent
       matches={slim}
       leaderboard={leaderboard}
-      currentUserId={userRes.data.user?.id ?? null}
+      currentUserId={user?.id ?? null}
+      favoriteTeamTla={profileRes.data?.favorite_team ?? null}
     />
   );
 }

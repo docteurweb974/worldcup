@@ -21,13 +21,16 @@ export function HomeContent({
   matches,
   leaderboard,
   currentUserId,
+  favoriteTeamTla,
 }: {
   matches: SlimMatch[];
   leaderboard: LeaderboardEntry[];
   currentUserId: string | null;
+  favoriteTeamTla: string | null;
 }) {
   const { favorites } = usePreferences();
-  const firstTla = favorites[0];
+  // Priorité à l'équipe favorite du profil (compte) ; repli sur le localStorage.
+  const firstTla = favoriteTeamTla ?? favorites[0];
   const team = firstTla ? TEAM_BY_TLA[firstTla] : undefined;
   const palette = firstTla ? getPalette(firstTla) : undefined;
 
