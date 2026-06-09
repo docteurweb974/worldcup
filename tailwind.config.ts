@@ -9,12 +9,21 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ["var(--font-body)", "ui-sans-serif", "system-ui", "sans-serif"],
+        display: ["var(--font-display)", "ui-sans-serif", "sans-serif"],
+      },
       colors: {
         // Couleurs d'accent pilotées par des variables CSS injectées dynamiquement
         // (cf. couleurs adaptatives selon l'équipe favorite).
         accent: {
           DEFAULT: "var(--color-accent)",
           soft: "var(--color-accent-soft)",
+        },
+        // CTA vert « event green » (skill ui-ux-pro-max).
+        cta: {
+          DEFAULT: "var(--color-cta)",
+          fg: "var(--color-cta-fg)",
         },
       },
       minHeight: {

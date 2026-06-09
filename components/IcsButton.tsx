@@ -38,7 +38,7 @@ export function IcsButton({
       type="button"
       onClick={handleDownload}
       disabled={disabled}
-      className="inline-flex min-h-tap items-center gap-2 rounded-full border border-neutral-300 px-4 text-sm font-medium transition-colors hover:border-accent hover:text-accent disabled:opacity-50 dark:border-neutral-700"
+      className="inline-flex min-h-tap cursor-pointer items-center gap-2 rounded-full bg-cta px-5 text-sm font-semibold text-cta-fg shadow-sm transition-[filter,transform] duration-200 hover:brightness-110 active:scale-95 disabled:opacity-50"
     >
       <span aria-hidden="true">📅</span> {label}
     </button>

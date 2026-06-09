@@ -1,16 +1,18 @@
+import type { IconName } from "./NavIcon";
+
 /** Onglets de navigation, partagés entre la barre mobile et la sidebar desktop. */
 export interface NavItem {
   href: string;
   label: string;
-  icon: string;
+  icon: IconName;
 }
 
 export const NAV_ITEMS: NavItem[] = [
-  { href: "/", label: "Accueil", icon: "🏠" },
-  { href: "/equipes", label: "Mes équipes", icon: "⭐" },
-  { href: "/calendrier", label: "Calendrier", icon: "📅" },
-  { href: "/classements", label: "Classements", icon: "📊" },
-  { href: "/pronos", label: "Mes pronos", icon: "🎯" },
+  { href: "/", label: "Accueil", icon: "home" },
+  { href: "/equipes", label: "Mes équipes", icon: "star" },
+  { href: "/calendrier", label: "Calendrier", icon: "calendar" },
+  { href: "/classements", label: "Classements", icon: "standings" },
+  { href: "/pronos", label: "Mes pronos", icon: "target" },
 ];
 
 /** Un onglet est-il actif pour le chemin courant ? */

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { NAV_ITEMS, isActive } from "./nav-items";
+import { NavIcon } from "./NavIcon";
 
 /** Barre d'onglets fixée en bas, visible sur mobile uniquement (md:hidden). */
 export function BottomNav() {
@@ -25,9 +26,7 @@ export function BottomNav() {
                 : "text-neutral-500 dark:text-neutral-400"
             }`}
           >
-            <span aria-hidden="true" className="text-lg">
-              {item.icon}
-            </span>
+            <NavIcon name={item.icon} className="h-5 w-5" />
             {item.label}
           </Link>
         );

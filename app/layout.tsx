@@ -1,7 +1,23 @@
 import type { Metadata, Viewport } from "next";
+import { Barlow, Barlow_Condensed } from "next/font/google";
 import "./globals.css";
 import { PreferencesProvider } from "@/components/PreferencesProvider";
 import { AppShell } from "@/components/AppShell";
+
+// Typo « athletic / competition » recommandée par le skill ui-ux-pro-max :
+// Barlow Condensed (titres) + Barlow (corps).
+const display = Barlow_Condensed({
+  weight: ["500", "600", "700"],
+  subsets: ["latin"],
+  variable: "--font-display",
+  display: "swap",
+});
+const body = Barlow({
+  weight: ["300", "400", "500", "600", "700"],
+  subsets: ["latin"],
+  variable: "--font-body",
+  display: "swap",
+});
 
 const siteUrl =
   process.env.NEXT_PUBLIC_SITE_URL ??
@@ -67,7 +83,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="fr" suppressHydrationWarning>
+    <html lang="fr" className={`${display.variable} ${body.variable}`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>

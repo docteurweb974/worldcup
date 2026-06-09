@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { NAV_ITEMS, isActive } from "./nav-items";
+import { NavIcon } from "./NavIcon";
 
 /** Barre latérale, visible sur desktop uniquement (hidden md:flex). */
 export function SideNav() {
@@ -26,9 +27,7 @@ export function SideNav() {
                   : "text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-900"
               }`}
             >
-              <span aria-hidden="true" className="text-lg">
-                {item.icon}
-              </span>
+              <NavIcon name={item.icon} className="h-5 w-5" />
               {item.label}
             </Link>
           );

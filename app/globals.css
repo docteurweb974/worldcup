@@ -3,14 +3,25 @@
 @tailwind utilities;
 
 /*
-  Variables CSS globales.
-  --color-accent / --color-accent-soft sont surchargées dynamiquement au runtime
-  selon l'équipe favorite de l'utilisateur (étape 6 : couleurs adaptatives).
-  Valeurs par défaut : bleu neutre.
+  Design system recommandé par le skill ui-ux-pro-max (style « Vibrant & Block-based ») :
+  primaire bleu, CTA vert, fond slate. --color-accent reste surchargeable sur la home.
 */
 :root {
+  --bg: #f8fafc;
+  --fg: #0f172a;
   --color-accent: #2563eb;
-  --color-accent-soft: #dbeafe;
+  --color-accent-soft: #e4ecfc;
+  --color-cta: #059669;
+  --color-cta-fg: #ffffff;
+}
+
+.dark {
+  --bg: #0f172a;
+  --fg: #f1f5f9;
+  --color-accent: #3b82f6;
+  --color-accent-soft: #1e293b;
+  --color-cta: #10b981;
+  --color-cta-fg: #052e1f;
 }
 
 html {
@@ -18,11 +29,21 @@ html {
 }
 
 body {
-  @apply bg-white text-neutral-900 antialiased;
+  background-color: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
   transition: background-color 0.2s ease, color 0.2s ease;
+  @apply antialiased;
 }
 
-/* Respecte la préférence système de réduction des animations. */
+/* Titres en Barlow Condensed (énergie « sport »). */
+h1,
+h2,
+h3 {
+  font-family: var(--font-display), ui-sans-serif, sans-serif;
+  letter-spacing: 0.01em;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -30,8 +51,4 @@ body {
     animation-duration: 0.001ms !important;
     transition-duration: 0.001ms !important;
   }
-}
-
-.dark body {
-  @apply bg-neutral-950 text-neutral-100;
 }
