@@ -10,6 +10,8 @@ import {
 } from "react";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import type { TimezoneChoice } from "@/lib/timezone";
+import { getPalette } from "@/data/countryColors";
+import { accessibleAccent } from "@/lib/colors";
 
 type Theme = "light" | "dark";
 
@@ -59,6 +61,20 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     if (!initialized) return;
     document.documentElement.classList.toggle("dark", theme === "dark");
   }, [theme, initialized]);
+
+  // Couleurs adaptatives : la 1re équipe favorite pilote --color-accent.
+  useEffect(() => {
+    const root = document.documentElement;
+    const first = favorites[0];
+    if (first) {
+      const palette = getPalette(first);
+      root.style.setProperty("--color-accent", accessibleAccent(palette.primary));
+      root.style.setProperty("--color-accent-soft", `${palette.primary}1a`);
+    } else {
+      root.style.removeProperty("--color-accent");
+      root.style.removeProperty("--color-accent-soft");
+    }
+  }, [favorites]);
 
   const toggleTheme = useCallback(() => {
     setTheme((t) => {

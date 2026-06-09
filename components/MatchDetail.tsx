@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { usePreferences } from "./PreferencesProvider";
 import { PredictionButtons } from "./PredictionButtons";
+import { IcsButton } from "./IcsButton";
 import { usePredictions } from "@/hooks/usePredictions";
 import { formatFull } from "@/lib/timezone";
+import { calendarFilename } from "@/lib/ics";
 import { displayTeam } from "@/data/teams";
 import {
   formatGroup,
@@ -87,6 +89,14 @@ export function MatchDetail({ match }: { match: Match }) {
           </p>
         )}
       </section>
+
+      <div className="text-center">
+        <IcsButton
+          matches={[match]}
+          filename={calendarFilename(match)}
+          label="Ajouter à mon calendrier"
+        />
+      </div>
     </div>
   );
 }

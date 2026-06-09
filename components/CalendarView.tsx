@@ -4,8 +4,10 @@ import { useMemo } from "react";
 import Link from "next/link";
 import { usePreferences } from "./PreferencesProvider";
 import { MatchCard } from "./MatchCard";
+import { IcsButton } from "./IcsButton";
 import { filterByFavorites, type Match } from "@/lib/api";
 import { dayKey, formatDateLong } from "@/lib/timezone";
+import { calendarFilename } from "@/lib/ics";
 
 export function CalendarView({ matches }: { matches: Match[] }) {
   const { favorites, timezone, hydrated } = usePreferences();
@@ -59,9 +61,18 @@ export function CalendarView({ matches }: { matches: Match[] }) {
     );
   }
 
+  const allFavoriteMatches = groups.flat();
+
   return (
     <div className="mx-auto max-w-2xl space-y-6 p-4">
-      <h1 className="text-xl font-bold">Calendrier 📅</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-xl font-bold">Calendrier 📅</h1>
+        <IcsButton
+          matches={allFavoriteMatches}
+          filename={calendarFilename()}
+          label="Exporter tous mes matchs"
+        />
+      </div>
       {groups.map((dayMatches) => (
         <section key={dayMatches[0].id} className="space-y-2">
           <h2 className="text-sm font-semibold text-neutral-500">
