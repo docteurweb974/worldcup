@@ -3,18 +3,11 @@
 import Link from "next/link";
 import { usePreferences } from "./PreferencesProvider";
 import { formatTime } from "@/lib/timezone";
-import { TEAM_BY_ID } from "@/data/teams";
-import { isFinished, isLive, type Match, type MatchTeam } from "@/lib/api";
-
-/** Drapeau + nom (depuis notre dataset, repli sur le nom de l'API). */
-function teamView(team: MatchTeam): { flag: string; name: string } {
-  const known = team.id != null ? TEAM_BY_ID[team.id] : undefined;
-  if (known) return { flag: known.flag, name: known.nameFr };
-  return { flag: "🏳️", name: team.name ?? "À déterminer" };
-}
+import { displayTeam } from "@/data/teams";
+import { formatGroup, isFinished, isLive, type Match, type MatchTeam } from "@/lib/api";
 
 function TeamSide({ team, align }: { team: MatchTeam; align: "left" | "right" }) {
-  const { flag, name } = teamView(team);
+  const { flag, nameFr } = displayTeam(team.id, team.name);
   return (
     <div
       className={`flex items-center gap-2 ${
@@ -24,7 +17,7 @@ function TeamSide({ team, align }: { team: MatchTeam; align: "left" | "right" })
       <span aria-hidden="true" className="text-2xl">
         {flag}
       </span>
-      <span className="text-sm font-medium leading-tight">{name}</span>
+      <span className="text-sm font-medium leading-tight">{nameFr}</span>
     </div>
   );
 }
@@ -37,7 +30,7 @@ export function MatchCard({ match }: { match: Match }) {
   const showScore = (live || finished) && home != null && away != null;
 
   const groupLabel = match.group
-    ? match.group.replace("GROUP_", "Groupe ")
+    ? formatGroup(match.group)
     : match.stage.replaceAll("_", " ").toLowerCase();
 
   return (

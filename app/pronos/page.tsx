@@ -1,5 +1,7 @@
-import { PagePlaceholder } from "@/components/PagePlaceholder";
+import { getMatches } from "@/lib/api";
+import { PronosView } from "@/components/PronosView";
 
-export default function PronosPage() {
-  return <PagePlaceholder title="Mes pronos 🎯" step="étape 5" />;
+export default async function PronosPage() {
+  const matches = await getMatches();
+  return <PronosView matches={matches} />;
 }

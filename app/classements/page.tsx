@@ -1,5 +1,7 @@
-import { PagePlaceholder } from "@/components/PagePlaceholder";
+import { getStandings } from "@/lib/api";
+import { StandingsView } from "@/components/StandingsView";
 
-export default function ClassementsPage() {
-  return <PagePlaceholder title="Classements 📊" step="étape 5" />;
+export default async function ClassementsPage() {
+  const standings = await getStandings();
+  return <StandingsView standings={standings} />;
 }

@@ -124,3 +124,30 @@ export function filterByFavorites(matches: Match[], favoriteTlas: string[]): Mat
       (m.awayTeam.tla && set.has(m.awayTeam.tla)),
   );
 }
+
+/** Issue d'un match du point de vue du pronostic. */
+export type Outcome = "home" | "draw" | "away";
+
+/** Récupère un match par son id (réutilise la liste en cache, aucune requête en plus). */
+export async function getMatch(id: number): Promise<Match | undefined> {
+  const matches = await getMatches();
+  return matches.find((m) => m.id === id);
+}
+
+/** Convertit le `score.winner` de l'API en issue de pronostic. */
+export function outcomeFromWinner(winner: Match["score"]["winner"]): Outcome | null {
+  if (winner === "HOME_TEAM") return "home";
+  if (winner === "AWAY_TEAM") return "away";
+  if (winner === "DRAW") return "draw";
+  return null;
+}
+
+/**
+ * Normalise un libellé de poule (« GROUP_A » des matchs ou « Group A » des
+ * classements) en « Groupe A ».
+ */
+export function formatGroup(group: string | null): string {
+  if (!group) return "";
+  const letter = group.replace(/^group[_ ]?/i, "").trim();
+  return letter ? `Groupe ${letter}` : group;
+}

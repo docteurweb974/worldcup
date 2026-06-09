@@ -74,3 +74,16 @@ export const TEAM_BY_TLA: Record<string, Team> = Object.fromEntries(
 export const TEAM_BY_ID: Record<number, Team> = Object.fromEntries(
   TEAMS.map((t) => [t.id, t]),
 );
+
+/**
+ * Drapeau + nom d'affichage à partir d'un id d'équipe de l'API.
+ * Repli sur le nom fourni par l'API (ex. équipe à déterminer en phase finale).
+ */
+export function displayTeam(
+  id: number | null,
+  fallbackName?: string | null,
+): { flag: string; nameFr: string } {
+  const t = id != null ? TEAM_BY_ID[id] : undefined;
+  if (t) return { flag: t.flag, nameFr: t.nameFr };
+  return { flag: "🏳️", nameFr: fallbackName ?? "À déterminer" };
+}
