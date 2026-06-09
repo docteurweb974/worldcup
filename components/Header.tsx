@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ThemeToggle } from "./ThemeToggle";
 import { TimezoneToggle } from "./TimezoneToggle";
+import { AuthButton } from "./auth/AuthButton";
 
 export function Header() {
   return (
@@ -17,7 +18,10 @@ export function Header() {
           World Cup Fun
         </Link>
       </div>
-      <TimezoneToggle />
+      <div className="flex items-center gap-2">
+        <TimezoneToggle />
+        <AuthButton />
+      </div>
     </header>
   );
 }
