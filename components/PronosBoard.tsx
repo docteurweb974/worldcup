@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePreferences } from "./PreferencesProvider";
 import { InlineMatchCard } from "./InlineMatchCard";
 import { CountUp } from "./CountUp";
+import { BaremeCard } from "./BaremeCard";
 import { savePrediction } from "@/app/predictions/actions";
 import { formatFull } from "@/lib/timezone";
 import { displayTeam } from "@/data/teams";
@@ -99,6 +100,8 @@ export function PronosBoard({
   return (
     <div className="mx-auto max-w-2xl space-y-6 p-4">
       <h1 className="text-xl font-bold">Mes pronos 🎯</h1>
+
+      <BaremeCard />
 
       {evaluated.length > 0 && (
         <div className="rounded-2xl border border-neutral-200 p-4 text-center dark:border-neutral-800">
