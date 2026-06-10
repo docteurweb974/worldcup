@@ -45,11 +45,8 @@ export default async function PronosPage() {
 
   return (
     <div className="space-y-4 pb-4">
-      <div className="mx-auto max-w-2xl px-4 pt-4">
+      <div className="mx-auto max-w-2xl space-y-4 px-4 pt-4">
         <ImportLocalPredictions />
-      </div>
-      <PronosBoard matches={matches} initialPredictions={initialPredictions} />
-      <div className="mx-auto max-w-2xl px-4">
         <Leaderboard
           entries={leaderboard}
           currentUserId={user.id}
@@ -57,6 +54,7 @@ export default async function PronosPage() {
           moreHref="/pronos/classement"
         />
       </div>
+      <PronosBoard matches={matches} initialPredictions={initialPredictions} />
     </div>
   );
 }
