@@ -87,3 +87,23 @@ export function displayTeam(
   if (t) return { flag: t.flag, nameFr: t.nameFr };
   return { flag: "🏳️", nameFr: fallbackName ?? "À déterminer" };
 }
+
+/** Code ISO (flagcdn) dérivé de l'emoji drapeau (+ cas Angleterre/Écosse). */
+function flagIso2(team: Team): string {
+  if (team.tla === "ENG") return "gb-eng";
+  if (team.tla === "SCO") return "gb-sct";
+  const ri = [...team.flag]
+    .map((c) => c.codePointAt(0) ?? 0)
+    .filter((c) => c >= 0x1f1e6 && c <= 0x1f1ff);
+  return ri.length === 2
+    ? ri.map((c) => String.fromCharCode(c - 0x1f1e6 + 97)).join("")
+    : "un"; // repli (drapeau ONU) si non dérivable
+}
+
+/**
+ * URL d'image drapeau pleine taille pour le fond d'écran (flagcdn, couverture
+ * complète des 48 nations — contrairement à crests.football-data.org).
+ */
+export function flagImageUrl(team: Team): string {
+  return `https://flagcdn.com/${flagIso2(team)}.svg`;
+}

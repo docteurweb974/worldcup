@@ -6,11 +6,8 @@ import { LeaderboardPreview } from "./LeaderboardPreview";
 import { usePreferences } from "./PreferencesProvider";
 import { getPalette } from "@/data/countryColors";
 import { accessibleAccent } from "@/lib/colors";
-import { TEAM_BY_TLA } from "@/data/teams";
+import { TEAM_BY_TLA, flagImageUrl } from "@/data/teams";
 import type { LeaderboardEntry } from "@/lib/leaderboard";
-
-/** Image de drapeau pleine page (football-data, SVG vectoriel net). */
-const flagUrl = (id: number) => `https://crests.football-data.org/${id}.svg`;
 
 /**
  * Page d'accueil. Si une équipe favorite est choisie, toute la home devient un
@@ -61,7 +58,7 @@ export function HomeContent({
 
   return (
     <section
-      style={{ ...accentVars, backgroundImage: `url(${flagUrl(team.id)})` }}
+      style={{ ...accentVars, backgroundImage: `url(${flagImageUrl(team)})` }}
       className="relative isolate -mb-20 flex min-h-[80vh] animate-fade-in flex-col items-center justify-center gap-6 overflow-hidden bg-cover bg-center p-4 md:-mb-6"
     >
       {/* Voile dégradé : garde le texte lisible quel que soit le drapeau. */}
