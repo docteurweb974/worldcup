@@ -4,7 +4,7 @@ import { useState } from "react";
 import { ScorePicker } from "./ScorePicker";
 import { displayTeam } from "@/data/teams";
 import { formatGroup, type Match } from "@/lib/api";
-import { formatTime, type TimezoneChoice } from "@/lib/timezone";
+import { formatFull, type TimezoneChoice } from "@/lib/timezone";
 import type { ScorePrediction } from "@/lib/predictions";
 
 type SaveResult = { error?: string; ok?: boolean } | undefined;
@@ -47,7 +47,7 @@ export function InlineMatchCard({
         <span className="capitalize">
           {match.group ? formatGroup(match.group) : match.stage.replaceAll("_", " ").toLowerCase()}
         </span>
-        <span className="tabular-nums">{formatTime(match.utcDate, timezone)}</span>
+        <span className="tabular-nums">{formatFull(match.utcDate, timezone)}</span>
       </div>
 
       <ScorePicker home={home} away={away} value={score} onChange={setScore} />

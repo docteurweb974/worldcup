@@ -1,17 +1,22 @@
+import Link from "next/link";
 import type { LeaderboardEntry } from "@/lib/leaderboard";
 
 const medal = (rank: number) =>
   rank === 1 ? "🥇" : rank === 2 ? "🥈" : rank === 3 ? "🥉" : `${rank}`;
 
-/** Classement complet des pronostiqueurs. */
+/** Classement des pronostiqueurs. `limit` tronque la liste avec un lien « Tout voir ». */
 export function Leaderboard({
   entries,
   currentUserId,
   title = "Classement 🏆",
+  limit,
+  moreHref,
 }: {
   entries: LeaderboardEntry[];
   currentUserId?: string | null;
   title?: string;
+  limit?: number;
+  moreHref?: string;
 }) {
   if (entries.length === 0) {
     return (
@@ -22,11 +27,13 @@ export function Leaderboard({
     );
   }
 
+  const shown = limit ? entries.slice(0, limit) : entries;
+
   return (
     <section className="space-y-2">
       <h2 className="text-lg font-bold">{title}</h2>
       <ol className="space-y-1">
-        {entries.map((e) => {
+        {shown.map((e) => {
           const me = e.userId === currentUserId;
           return (
             <li
@@ -56,6 +63,14 @@ export function Leaderboard({
           );
         })}
       </ol>
+      {limit && moreHref && entries.length > limit && (
+        <Link
+          href={moreHref}
+          className="block rounded-xl border border-neutral-200 py-2 text-center text-sm font-medium text-accent hover:bg-neutral-50 dark:border-neutral-800 dark:hover:bg-neutral-900"
+        >
+          Tout voir ({entries.length} joueurs)
+        </Link>
+      )}
     </section>
   );
 }

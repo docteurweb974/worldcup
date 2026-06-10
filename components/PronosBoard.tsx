@@ -38,21 +38,6 @@ function roundOf(m: Match): { key: string; label: string } {
   };
 }
 
-/** Clé du premier tour comportant un match non pronostiqué (pour l'ouverture par défaut). */
-function firstIncompleteRound(upcoming: Match[], predicted: Set<number>): string | null {
-  const order: string[] = [];
-  const hasTodo = new Map<string, boolean>();
-  for (const m of [...upcoming].sort(byDate)) {
-    const k = roundOf(m).key;
-    if (!hasTodo.has(k)) {
-      hasTodo.set(k, false);
-      order.push(k);
-    }
-    if (!predicted.has(m.id)) hasTodo.set(k, true);
-  }
-  return order.find((k) => hasTodo.get(k)) ?? order[0] ?? null;
-}
-
 export function PronosBoard({
   matches,
   initialPredictions,
@@ -64,17 +49,18 @@ export function PronosBoard({
   const [preds, setPreds] = useState<Map<number, ScorePrediction>>(
     () => new Map(initialPredictions.map((p) => [p.matchId, { home: p.home, away: p.away }])),
   );
-
-  const upcoming = useMemo(() => matches.filter(canPredict), [matches]);
-  const [openRound, setOpenRound] = useState<string | null>(() =>
-    firstIncompleteRound(upcoming, new Set(initialPredictions.map((p) => p.matchId))),
-  );
+  const [openRound, setOpenRound] = useState<string | null>(null); // tout fermé par défaut
+  const [hideDone, setHideDone] = useState(false);
 
   const handleSave = async (matchId: number, score: ScorePrediction) => {
     const res = await savePrediction(matchId, score.home, score.away);
     if (!res?.error) setPreds((prev) => new Map(prev).set(matchId, score));
     return res;
   };
+
+  const upcoming = useMemo(() => matches.filter(canPredict), [matches]);
+  const done = upcoming.filter((m) => preds.has(m.id)).length;
+  const pct = upcoming.length > 0 ? Math.round((100 * done) / upcoming.length) : 0;
 
   const rounds = useMemo(() => {
     const order: string[] = [];
@@ -94,6 +80,8 @@ export function PronosBoard({
       return { ...r, done: r.matches.filter((m) => preds.has(m.id)).length };
     });
   }, [upcoming, preds]);
+
+  const visibleRounds = hideDone ? rounds.filter((r) => r.done < r.matches.length) : rounds;
 
   // Bilan des matchs terminés que tu as pronostiqués.
   const evaluated = useMemo(() => {
@@ -124,12 +112,38 @@ export function PronosBoard({
       )}
 
       {upcoming.length > 0 && (
-        <section className="space-y-2">
-          {rounds.length === 0 ? (
+        <section className="space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="font-bold">À pronostiquer</h2>
+            <button
+              type="button"
+              aria-pressed={hideDone}
+              onClick={() => setHideDone((v) => !v)}
+              className={`min-h-tap rounded-full border px-4 text-sm font-medium transition-colors ${
+                hideDone
+                  ? "border-cta bg-cta text-cta-fg"
+                  : "border-neutral-300 text-neutral-600 dark:border-neutral-700 dark:text-neutral-400"
+              }`}
+            >
+              {hideDone ? "Afficher toutes les journées" : "Masquer les journées terminées"}
+            </button>
+          </div>
+
+          <div>
+            <div className="mb-1 flex justify-between text-xs text-neutral-500">
+              <span>Progression</span>
+              <span className="tabular-nums">{done} / {upcoming.length} matchs</span>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-800">
+              <div className="h-full rounded-full bg-cta transition-[width]" style={{ width: `${pct}%` }} />
+            </div>
+          </div>
+
+          {visibleRounds.length === 0 ? (
             <p className="p-6 text-center text-sm text-neutral-500">Tout est pronostiqué. 🎉</p>
           ) : (
             <div className="space-y-2">
-              {rounds.map((round) => {
+              {visibleRounds.map((round) => {
                 const open = openRound === round.key;
                 const complete = round.done === round.matches.length;
                 return (
