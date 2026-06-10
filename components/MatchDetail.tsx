@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { usePreferences } from "./PreferencesProvider";
 import { ScorePicker } from "./ScorePicker";
 import { IcsButton } from "./IcsButton";
+import { CommunityBar } from "./CommunityBar";
+import type { CommunityStats } from "@/lib/community";
 import { savePrediction } from "@/app/predictions/actions";
 import { formatFull } from "@/lib/timezone";
 import { calendarFilename } from "@/lib/ics";
@@ -17,10 +19,12 @@ export function MatchDetail({
   match,
   prediction,
   isLoggedIn,
+  community,
 }: {
   match: Match;
   prediction: ScorePrediction | null;
   isLoggedIn: boolean;
+  community: CommunityStats | null;
 }) {
   const { timezone } = usePreferences();
   const router = useRouter();
@@ -134,6 +138,10 @@ export function MatchDetail({
           </p>
         )}
       </section>
+
+      {community && community.total > 0 && (
+        <CommunityBar stats={community} homeName={home.nameFr} awayName={away.nameFr} />
+      )}
 
       <div className="text-center">
         <IcsButton

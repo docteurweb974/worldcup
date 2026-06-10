@@ -1,5 +1,6 @@
 import { getMatch } from "@/lib/api";
 import { createClient } from "@/lib/supabase/server";
+import { getMatchCommunity } from "@/lib/community";
 import { MatchDetail } from "@/components/MatchDetail";
 import { PagePlaceholder } from "@/components/PagePlaceholder";
 import type { ScorePrediction } from "@/lib/predictions";
@@ -27,5 +28,16 @@ export default async function MatchPage({ params }: { params: { id: string } }) 
     if (data) prediction = { home: data.home, away: data.away };
   }
 
-  return <MatchDetail match={match} prediction={prediction} isLoggedIn={!!user} />;
+  // Répartition de la communauté, seulement après le coup d'envoi.
+  const started = new Date(match.utcDate).getTime() <= Date.now();
+  const community = started ? await getMatchCommunity(id) : null;
+
+  return (
+    <MatchDetail
+      match={match}
+      prediction={prediction}
+      isLoggedIn={!!user}
+      community={community}
+    />
+  );
 }
