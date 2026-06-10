@@ -12,6 +12,8 @@ const EMPTY: PlayerStats = {
   fullMatchdays: 0,
   rank: 0,
   hasFavorite: false,
+  knockoutExact: false,
+  cleanSheetExact: false,
 };
 
 /** Calcule les statistiques d'un joueur (pour ses badges et son palmarès). */
@@ -47,10 +49,17 @@ export async function getPlayerStats(userId: string): Promise<PlayerStats> {
   let exact = 0;
   let streak = 0;
   let run = 0;
+  let knockoutExact = false;
+  let cleanSheetExact = false;
   for (const { p, m } of finished) {
     const pts = predictionPoints({ home: p.home, away: p.away }, m!) ?? 0;
     points += pts;
-    if (pts === POINTS.exact) exact += 1;
+    if (pts === POINTS.exact) {
+      exact += 1;
+      if (m!.stage !== "GROUP_STAGE") knockoutExact = true;
+      const ft = m!.score.fullTime;
+      if (ft.home === 0 || ft.away === 0) cleanSheetExact = true;
+    }
     if (pts > 0) {
       run += 1;
       if (run > streak) streak = run;
@@ -88,5 +97,7 @@ export async function getPlayerStats(userId: string): Promise<PlayerStats> {
     fullMatchdays,
     rank,
     hasFavorite: !!profile?.favorite_team,
+    knockoutExact,
+    cleanSheetExact,
   };
 }
