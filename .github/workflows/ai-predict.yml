@@ -1,0 +1,33 @@
+name: Pronos IA
+
+on:
+  # Tous les 2 jours à 05:00 UTC (la fenêtre de 72 h couvre les éventuels décalages).
+  schedule:
+    - cron: "0 5 */2 * *"
+  # Déclenchement manuel depuis l'onglet Actions de GitHub.
+  workflow_dispatch:
+
+# Évite que deux exécutions se chevauchent.
+concurrency:
+  group: ai-predict
+  cancel-in-progress: false
+
+jobs:
+  predict:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Lancer le joueur IA
+        run: node scripts/ai-predict.mjs
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          FOOTBALL_DATA_API_KEY: ${{ secrets.FOOTBALL_DATA_API_KEY }}
+          AI_BOT_USER_ID: ${{ secrets.AI_BOT_USER_ID }}
