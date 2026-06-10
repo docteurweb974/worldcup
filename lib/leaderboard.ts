@@ -29,8 +29,6 @@ export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
     admin.from("profiles").select("id, username"),
   ]);
 
-  const nameById = new Map((profiles ?? []).map((p) => [p.id, p.username]));
-
   let matchesById = new Map<number, Awaited<ReturnType<typeof getMatches>>[number]>();
   try {
     const matches = await getMatches();
@@ -40,10 +38,8 @@ export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
   }
 
   const agg = new Map<string, { points: number; exact: number; played: number }>();
-  const participants = new Set<string>();
 
   for (const p of preds ?? []) {
-    participants.add(p.user_id);
     const match = matchesById.get(p.match_id);
     if (!match) continue;
     const pts = predictionPoints({ home: p.home, away: p.away }, match);
@@ -55,11 +51,12 @@ export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
     agg.set(p.user_id, cur);
   }
 
-  const entries = [...participants].map((id) => {
-    const a = agg.get(id) ?? { points: 0, exact: 0, played: 0 };
+  // Tous les joueurs inscrits apparaissent (0 pt s'ils n'ont pas encore marqué).
+  const entries = (profiles ?? []).map((prof) => {
+    const a = agg.get(prof.id) ?? { points: 0, exact: 0, played: 0 };
     return {
-      userId: id,
-      username: nameById.get(id) ?? "Joueur",
+      userId: prof.id,
+      username: prof.username,
       points: a.points,
       exact: a.exact,
       played: a.played,
