@@ -3,6 +3,7 @@ import { Barlow, Barlow_Condensed } from "next/font/google";
 import "./globals.css";
 import { PreferencesProvider } from "@/components/PreferencesProvider";
 import { AppShell } from "@/components/AppShell";
+import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 import { getAccountSummary } from "@/lib/account";
 
 // Typo « athletic / competition » recommandée par le skill ui-ux-pro-max :
@@ -55,6 +56,11 @@ export const metadata: Metadata = {
     title,
     description,
   },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "World Cup Fun",
+  },
 };
 
 export const viewport: Viewport = {
@@ -93,6 +99,7 @@ export default async function RootLayout({
         <PreferencesProvider>
           <AppShell account={account}>{children}</AppShell>
         </PreferencesProvider>
+        <ServiceWorkerRegister />
       </body>
     </html>
   );
