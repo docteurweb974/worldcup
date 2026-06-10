@@ -62,7 +62,7 @@ export function InlineMatchCard({
         type="button"
         onClick={save}
         disabled={saving || !dirty}
-        className="mt-2 min-h-tap w-full cursor-pointer rounded-xl bg-cta text-sm font-semibold text-cta-fg transition hover:brightness-110 disabled:opacity-50"
+        className="mt-2 min-h-tap w-full cursor-pointer rounded-xl bg-cta text-sm font-semibold text-cta-fg transition hover:brightness-110 active:scale-[0.98] disabled:opacity-50"
       >
         {saving ? "Enregistrement…" : dirty ? "Enregistrer" : "✓ Enregistré"}
       </button>

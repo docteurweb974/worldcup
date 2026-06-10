@@ -22,7 +22,7 @@ function TeamSide({ team, align }: { team: MatchTeam; align: "left" | "right" })
   );
 }
 
-export function MatchCard({ match }: { match: Match }) {
+export function MatchCard({ match, predicted = false }: { match: Match; predicted?: boolean }) {
   const { timezone } = usePreferences();
   const live = isLive(match.status);
   const finished = isFinished(match.status);
@@ -36,7 +36,7 @@ export function MatchCard({ match }: { match: Match }) {
   return (
     <Link
       href={`/match/${match.id}`}
-      className={`block rounded-xl border p-3 transition-colors ${
+      className={`block rounded-xl border p-3 transition hover:-translate-y-0.5 active:scale-[0.99] ${
         live
           ? "border-red-400 bg-red-50 dark:border-red-500/50 dark:bg-red-950/30"
           : "border-neutral-200 hover:border-accent dark:border-neutral-800"
@@ -51,6 +51,9 @@ export function MatchCard({ match }: { match: Match }) {
           </span>
         )}
         {finished && <span>Terminé</span>}
+        {!live && !finished && predicted && (
+          <span className="font-semibold text-green-600 dark:text-green-400">✓ Pronostiqué</span>
+        )}
       </div>
 
       <div className="mt-2 grid grid-cols-[1fr_auto_1fr] items-center gap-2">

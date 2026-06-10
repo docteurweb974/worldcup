@@ -41,18 +41,20 @@ export function ScorePicker({
                 type="button"
                 aria-label={`Retirer un but à ${team.nameFr}`}
                 onClick={() => update(side, -1)}
-                className="grid h-tap w-tap place-items-center rounded-full border border-neutral-300 text-xl transition-colors hover:border-accent dark:border-neutral-700"
+                className="grid h-tap w-tap place-items-center rounded-full border border-neutral-300 text-xl transition hover:border-accent active:scale-90 dark:border-neutral-700"
               >
                 −
               </button>
               <span className="w-8 text-center text-3xl font-bold tabular-nums">
-                {current[side]}
+                <span key={current[side]} className="inline-block animate-bump">
+                  {current[side]}
+                </span>
               </span>
               <button
                 type="button"
                 aria-label={`Ajouter un but à ${team.nameFr}`}
                 onClick={() => update(side, 1)}
-                className="grid h-tap w-tap place-items-center rounded-full border border-neutral-300 text-xl transition-colors hover:border-accent dark:border-neutral-700"
+                className="grid h-tap w-tap place-items-center rounded-full border border-neutral-300 text-xl transition hover:border-accent active:scale-90 dark:border-neutral-700"
               >
                 +
               </button>

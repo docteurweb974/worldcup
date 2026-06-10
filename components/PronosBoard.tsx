@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { usePreferences } from "./PreferencesProvider";
 import { InlineMatchCard } from "./InlineMatchCard";
+import { CountUp } from "./CountUp";
 import { savePrediction } from "@/app/predictions/actions";
 import { formatFull } from "@/lib/timezone";
 import { displayTeam } from "@/data/teams";
@@ -102,7 +103,7 @@ export function PronosBoard({
       {evaluated.length > 0 && (
         <div className="rounded-2xl border border-neutral-200 p-4 text-center dark:border-neutral-800">
           <p className="text-sm text-neutral-500">Total de points</p>
-          <p className="text-5xl font-bold text-accent">{total}</p>
+          <CountUp value={total} className="block text-5xl font-bold text-accent" />
           <div className="mt-3 flex justify-center gap-4 text-sm text-neutral-500">
             <span>🎯 {exact} exact{exact > 1 ? "s" : ""}</span>
             <span>✅ {good} bon{good > 1 ? "s" : ""}</span>
@@ -177,19 +178,25 @@ export function PronosBoard({
                         </svg>
                       </span>
                     </button>
-                    {open && (
-                      <div className="space-y-2 border-t border-neutral-200 p-3 dark:border-neutral-800">
-                        {round.matches.map((m) => (
-                          <InlineMatchCard
-                            key={m.id}
-                            match={m}
-                            prediction={preds.get(m.id) ?? null}
-                            timezone={timezone}
-                            onSave={handleSave}
-                          />
-                        ))}
+                    <div
+                      className={`grid transition-[grid-template-rows] duration-300 ease-out ${
+                        open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+                      }`}
+                    >
+                      <div className="overflow-hidden">
+                        <div className="space-y-2 border-t border-neutral-200 p-3 dark:border-neutral-800">
+                          {round.matches.map((m) => (
+                            <InlineMatchCard
+                              key={m.id}
+                              match={m}
+                              prediction={preds.get(m.id) ?? null}
+                              timezone={timezone}
+                              onSave={handleSave}
+                            />
+                          ))}
+                        </div>
                       </div>
-                    )}
+                    </div>
                   </div>
                 );
               })}

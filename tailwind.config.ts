@@ -37,9 +37,20 @@ const config: Config = {
           "0%": { opacity: "0", transform: "translateY(4px)" },
           "100%": { opacity: "1", transform: "translateY(0)" },
         },
+        bump: {
+          "0%": { transform: "scale(1)" },
+          "30%": { transform: "scale(1.3)" },
+          "100%": { transform: "scale(1)" },
+        },
+        kenburns: {
+          "0%": { transform: "scale(1)" },
+          "100%": { transform: "scale(1.12)" },
+        },
       },
       animation: {
         "fade-in": "fadeIn 0.3s ease-out both",
+        bump: "bump 0.3s ease-out",
+        kenburns: "kenburns 20s ease-out both",
       },
     },
   },
