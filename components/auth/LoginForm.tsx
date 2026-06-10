@@ -40,6 +40,9 @@ export function LoginForm() {
         required
         className={inputCls}
       />
+      <Link href="/mot-de-passe-oublie" className="self-end text-sm text-neutral-500 hover:text-accent">
+        Mot de passe oublié ?
+      </Link>
       {state?.error && (
         <p role="alert" className="text-sm text-red-600 dark:text-red-400">
           {state.error}

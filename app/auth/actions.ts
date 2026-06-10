@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 
 export type AuthState = { error?: string; message?: string } | undefined;
@@ -61,4 +62,44 @@ export async function logout() {
   await supabase.auth.signOut();
   revalidatePath("/", "layout");
   redirect("/connexion");
+}
+
+/** Envoie un email de réinitialisation de mot de passe. */
+export async function requestPasswordReset(
+  _prev: AuthState,
+  formData: FormData,
+): Promise<AuthState> {
+  const email = String(formData.get("email") ?? "").trim();
+  if (!email) return { error: "Renseigne ton email." };
+
+  const origin = headers().get("origin") ?? "http://localhost:3000";
+  const supabase = createClient();
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${origin}/auth/confirm?next=/nouveau-mot-de-passe`,
+  });
+  if (error) return { error: "Envoi impossible. Réessaie dans un moment." };
+
+  return {
+    message: "Si un compte existe pour cet email, un lien de réinitialisation vient d'être envoyé.",
+  };
+}
+
+/** Définit un nouveau mot de passe (session de récupération active). */
+export async function updatePassword(_prev: AuthState, formData: FormData): Promise<AuthState> {
+  const password = String(formData.get("password") ?? "");
+  if (password.length < 6) {
+    return { error: "Le mot de passe doit faire au moins 6 caractères." };
+  }
+
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Lien expiré ou invalide. Refais une demande." };
+
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) return { error: "Mise à jour impossible." };
+
+  revalidatePath("/", "layout");
+  redirect("/");
 }

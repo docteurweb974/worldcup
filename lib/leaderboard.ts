@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getMatches } from "@/lib/api";
 import { POINTS, predictionPoints } from "@/lib/predictions";
@@ -15,7 +16,7 @@ export interface LeaderboardEntry {
  * Classement global : pour chaque joueur ayant pronostiqué, somme des points
  * (pronos × résultats × barème). Calculé côté serveur ; n'expose que des totaux.
  */
-export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
+async function computeLeaderboard(): Promise<LeaderboardEntry[]> {
   let admin: ReturnType<typeof createAdminClient>;
   try {
     admin = createAdminClient();
@@ -70,3 +71,11 @@ export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
 
   return entries.map((e, i) => ({ ...e, rank: i + 1 }));
 }
+
+/**
+ * Classement mis en cache (recalcul au plus une fois / 60 s, partagé par tous
+ * les visiteurs) : évite de relire tous les pronos à chaque affichage.
+ */
+export const getLeaderboard = unstable_cache(computeLeaderboard, ["leaderboard-v1"], {
+  revalidate: 60,
+});
