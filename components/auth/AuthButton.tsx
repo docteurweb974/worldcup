@@ -70,6 +70,14 @@ export function AuthButton({ account }: { account: AccountSummary | null }) {
           <Link role="menuitem" href="/profil" onClick={() => setOpen(false)} className={itemCls}>
             Mon profil
           </Link>
+          <Link
+            role="menuitem"
+            href={`/joueur/${account.id}`}
+            onClick={() => setOpen(false)}
+            className={itemCls}
+          >
+            Mon palmarès
+          </Link>
           <Link role="menuitem" href="/pronos" onClick={() => setOpen(false)} className={itemCls}>
             Mes pronos
           </Link>

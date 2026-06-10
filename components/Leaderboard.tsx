@@ -36,15 +36,16 @@ export function Leaderboard({
         {shown.map((e) => {
           const me = e.userId === currentUserId;
           return (
-            <li
-              key={e.userId}
-              className={`flex items-center justify-between gap-2 rounded-xl border p-3 text-sm ${
-                me
-                  ? "border-accent bg-accent-soft font-semibold"
-                  : "border-neutral-200 dark:border-neutral-800"
-              }`}
-            >
-              <div className="flex min-w-0 items-center gap-3">
+            <li key={e.userId}>
+              <Link
+                href={`/joueur/${e.userId}`}
+                className={`flex items-center justify-between gap-2 rounded-xl border p-3 text-sm transition-colors hover:border-accent ${
+                  me
+                    ? "border-accent bg-accent-soft font-semibold"
+                    : "border-neutral-200 dark:border-neutral-800"
+                }`}
+              >
+                <div className="flex min-w-0 items-center gap-3">
                 <span className="w-7 shrink-0 text-center font-bold tabular-nums">
                   {medal(e.rank)}
                 </span>
@@ -58,7 +59,8 @@ export function Leaderboard({
                 {e.played > 0 && (
                   <span className="ml-2 text-xs text-neutral-500">🎯 {e.exact}</span>
                 )}
-              </div>
+                </div>
+              </Link>
             </li>
           );
         })}

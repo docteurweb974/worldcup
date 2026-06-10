@@ -3,6 +3,7 @@ import { getMatches } from "@/lib/api";
 import { predictionPoints } from "@/lib/predictions";
 
 export interface AccountSummary {
+  id: string;
   username: string;
   points: number;
 }
@@ -37,5 +38,5 @@ export async function getAccountSummary(): Promise<AccountSummary | null> {
     }
   }
 
-  return { username: profile?.username ?? "Compte", points };
+  return { id: user.id, username: profile?.username ?? "Compte", points };
 }

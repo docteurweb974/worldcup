@@ -142,6 +142,12 @@ export function outcomeFromWinner(winner: Match["score"]["winner"]): Outcome | n
   return null;
 }
 
+/** Clé de regroupement par « tour » : Journée X (poules) ou nom de la phase finale. */
+export function roundKey(m: Match): string {
+  if (m.stage === "GROUP_STAGE") return `J${m.matchday ?? 0}`;
+  return m.stage;
+}
+
 /**
  * Normalise un libellé de poule (« GROUP_A » des matchs ou « Group A » des
  * classements) en « Groupe A ».
