@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getPlayerStats } from "@/lib/player-stats";
 import { earnedCount, BADGES } from "@/lib/badges";
 import { BadgeGrid } from "@/components/BadgeGrid";
+import { CountUp } from "@/components/CountUp";
 import { PagePlaceholder } from "@/components/PagePlaceholder";
 import { TEAM_BY_TLA } from "@/data/teams";
 
@@ -43,7 +44,7 @@ export default async function PalmaresPage({ params }: { params: { id: string } 
           {isMe && <span className="text-neutral-400"> (toi)</span>}
         </h1>
         <p className="mt-1 text-sm text-neutral-500">
-          {stats.points} pts
+          <CountUp value={stats.points} /> pts
           {stats.rank > 0 && <> · {stats.rank}ᵉ au classement</>}
           {" · "}
           {earnedCount(stats)}/{BADGES.length} badges

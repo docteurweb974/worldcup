@@ -23,9 +23,16 @@ function groupByDay(list: Match[], timezone: TimezoneChoice): Match[][] {
   return [...map.values()];
 }
 
-export function CalendarView({ matches }: { matches: Match[] }) {
+export function CalendarView({
+  matches,
+  predictedMatchIds = [],
+}: {
+  matches: Match[];
+  predictedMatchIds?: number[];
+}) {
   const { favorites, timezone, hydrated } = usePreferences();
   const [view, setView] = useState<View>("mine");
+  const predicted = useMemo(() => new Set(predictedMatchIds), [predictedMatchIds]);
 
   const favoriteMatches = useMemo(
     () => filterByFavorites(matches, favorites),
@@ -100,7 +107,7 @@ export function CalendarView({ matches }: { matches: Match[] }) {
                 {formatDateLong(dayMatches[0].utcDate, timezone)}
               </h2>
               {dayMatches.map((m) => (
-                <MatchCard key={m.id} match={m} />
+                <MatchCard key={m.id} match={m} predicted={predicted.has(m.id)} />
               ))}
             </section>
           ))}
