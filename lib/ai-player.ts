@@ -97,12 +97,15 @@ export async function predictBatch(
           role: "user",
           content:
             `Coupe du Monde 2026. Matchs à venir à analyser :\n${fixtures}\n\n` +
-            `Consulte en priorité les analyses data de The Analyst : ` +
-            `https://theanalyst.com/competition/fifa-world-cup (et ses articles/previews liés à ces ` +
-            `équipes et matchs), puis complète par des recherches web. Récupère les informations ` +
-            `récentes pertinentes (forme actuelle, blessures, suspensions, compositions probables, ` +
-            `indicateurs statistiques, dynamique) et rédige une synthèse concise (quelques lignes par ` +
-            `équipe). Ne donne pas encore de score.`,
+            `Consulte en priorité les analyses data de The Analyst, notamment ces pages :\n` +
+            `- https://theanalyst.com/competition/fifa-world-cup (hub & previews)\n` +
+            `- https://theanalyst.com/competition/fifa-world-cup/standings (classements)\n` +
+            `- https://theanalyst.com/competition/fifa-world-cup/fixtures (calendrier & résultats)\n` +
+            `- https://theanalyst.com/competition/fifa-world-cup/stats (statistiques)\n` +
+            `ainsi que les articles/previews liés à ces équipes et matchs, puis complète par des ` +
+            `recherches web. Récupère les informations récentes pertinentes (forme actuelle, blessures, ` +
+            `suspensions, compositions probables, indicateurs statistiques, dynamique) et rédige une ` +
+            `synthèse concise (quelques lignes par équipe). Ne donne pas encore de score.`,
         },
       ],
     });
