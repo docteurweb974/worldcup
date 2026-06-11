@@ -1,0 +1,24 @@
+name: Capture résultats
+
+# Garantit la mémorisation des scores INDÉPENDAMMENT des visites du site.
+# Pingue /api/match-status, qui déclenche getResilientMatches → write-through
+# des résultats dans Supabase dès qu'un match est réellement terminé.
+on:
+  schedule:
+    - cron: "*/10 * * * *" # toutes les 10 minutes
+  workflow_dispatch:
+
+concurrency:
+  group: capture-results
+  cancel-in-progress: false
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Pinger l'endpoint (capture des résultats)
+        run: |
+          curl -sS --max-time 60 \
+            "https://worldcup-livid-ten.vercel.app/api/match-status" \
+            -w "\nHTTP %{http_code}\n"
