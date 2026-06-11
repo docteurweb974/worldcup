@@ -36,12 +36,24 @@ export async function getResilientMatches(): Promise<Match[]> {
     (stored ?? []).map((r) => [r.match_id, { home: r.home, away: r.away }]),
   );
 
-  // Write-through : on capture les scores valides pas encore mémorisés.
+  // Write-through : on ne capture un score QUE si le match est réellement terminé.
+  // « Réellement » = statut FINISHED ET au moins 110 min écoulées depuis le coup
+  // d'envoi (90' + mi-temps + arrêts de jeu) — garde-fou contre un statut qui
+  // glitche en « FINISHED » alors que le match est encore en cours.
+  const now = Date.now();
+  const MIN_ELAPSED_MS = 110 * 60 * 1000;
   const toStore: { match_id: number; home: number; away: number }[] = [];
   for (const m of matches) {
     const h = m.score.fullTime.home;
     const a = m.score.fullTime.away;
-    if (isFinished(m.status) && h != null && a != null && !known.has(m.id)) {
+    const elapsed = now - new Date(m.utcDate).getTime();
+    if (
+      isFinished(m.status) &&
+      elapsed >= MIN_ELAPSED_MS &&
+      h != null &&
+      a != null &&
+      !known.has(m.id)
+    ) {
       known.set(m.id, { home: h, away: a });
       toStore.push({ match_id: m.id, home: h, away: a });
     }
