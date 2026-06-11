@@ -1,4 +1,4 @@
-import { getMatches } from "@/lib/api";
+import { getResilientMatches } from "@/lib/results";
 import { createClient } from "@/lib/supabase/server";
 import { CalendarView } from "@/components/CalendarView";
 
@@ -9,7 +9,7 @@ export default async function CalendrierPage() {
   } = await supabase.auth.getUser();
 
   const [matches, predsRes] = await Promise.all([
-    getMatches(),
+    getResilientMatches(),
     user
       ? supabase.from("predictions").select("match_id").eq("user_id", user.id)
       : Promise.resolve({ data: [] as { match_id: number }[] }),

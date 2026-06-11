@@ -1,4 +1,4 @@
-import { getMatch } from "@/lib/api";
+import { getResilientMatch } from "@/lib/results";
 import { createClient } from "@/lib/supabase/server";
 import { getMatchCommunity } from "@/lib/community";
 import { MatchDetail } from "@/components/MatchDetail";
@@ -7,7 +7,7 @@ import type { ScorePrediction } from "@/lib/predictions";
 
 export default async function MatchPage({ params }: { params: { id: string } }) {
   const id = Number(params.id);
-  const match = await getMatch(id);
+  const match = await getResilientMatch(id);
   if (!match) {
     return <PagePlaceholder title="Match introuvable" step="vérifie le lien" />;
   }

@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getMatches, isFinished, roundKey } from "@/lib/api";
+import { isFinished, roundKey } from "@/lib/api";
+import { getResilientMatches } from "@/lib/results";
 import { getLeaderboard } from "@/lib/leaderboard";
 import { POINTS, predictionPoints } from "@/lib/predictions";
 import type { PlayerStats } from "@/lib/badges";
@@ -31,9 +32,9 @@ export async function getPlayerStats(userId: string): Promise<PlayerStats> {
   ]);
   const predList = preds ?? [];
 
-  let matches: Awaited<ReturnType<typeof getMatches>> = [];
+  let matches: Awaited<ReturnType<typeof getResilientMatches>> = [];
   try {
-    matches = await getMatches();
+    matches = await getResilientMatches();
   } catch {
     /* API indisponible : stats partielles */
   }

@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { getMatches } from "@/lib/api";
+import { getResilientMatches } from "@/lib/results";
 import { predictionPoints } from "@/lib/predictions";
 
 export interface AccountSummary {
@@ -27,7 +27,7 @@ export async function getAccountSummary(): Promise<AccountSummary | null> {
   let points = 0;
   if (preds && preds.length > 0) {
     try {
-      const matches = await getMatches();
+      const matches = await getResilientMatches();
       const byId = new Map(matches.map((m) => [m.id, m]));
       for (const p of preds) {
         const match = byId.get(p.match_id);

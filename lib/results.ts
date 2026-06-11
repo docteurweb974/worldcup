@@ -62,6 +62,16 @@ export async function getResilientMatches(): Promise<Match[]> {
     await db.from("match_results").upsert(toStore, { onConflict: "match_id" });
   }
 
+  return overlay(matches, known);
+}
+
+/** Un seul match, avec score résilient (réutilise getResilientMatches). */
+export async function getResilientMatch(id: number): Promise<Match | undefined> {
+  return (await getResilientMatches()).find((m) => m.id === id);
+}
+
+/** Applique les scores mémorisés au flux live (force le statut « terminé »). */
+function overlay(matches: Match[], known: Map<number, { home: number; away: number }>): Match[] {
   // On superpose les scores mémorisés (et on force le statut « terminé »).
   return matches.map((m) => {
     const r = known.get(m.id);
