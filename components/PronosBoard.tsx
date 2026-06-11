@@ -1,11 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { usePreferences } from "./PreferencesProvider";
 import { InlineMatchCard } from "./InlineMatchCard";
 import { CountUp } from "./CountUp";
 import { BaremeCard } from "./BaremeCard";
 import { savePrediction } from "@/app/predictions/actions";
+import { formatFull } from "@/lib/timezone";
+import { displayTeam } from "@/data/teams";
 import { isFinished, type Match } from "@/lib/api";
 import { POINTS, predictionPoints, type ScorePrediction } from "@/lib/predictions";
 
@@ -218,6 +221,43 @@ export function PronosBoard({
               })}
             </div>
           )}
+        </section>
+      )}
+
+      {evaluated.length > 0 && (
+        <section className="space-y-2">
+          <h2 className="font-bold">Récap des matchs terminés</h2>
+          {evaluated.map(({ m, pts }) => {
+            const home = displayTeam(m.homeTeam.id, m.homeTeam.name);
+            const away = displayTeam(m.awayTeam.id, m.awayTeam.name);
+            const pred = preds.get(m.id)!;
+            const tone =
+              pts === POINTS.exact
+                ? "text-green-600 dark:text-green-400"
+                : pts === POINTS.outcome
+                  ? "text-amber-600 dark:text-amber-400"
+                  : "text-red-600 dark:text-red-400";
+            return (
+              <Link
+                key={m.id}
+                href={`/match/${m.id}`}
+                className="flex items-center justify-between gap-2 rounded-xl border border-neutral-200 p-3 text-sm dark:border-neutral-800"
+              >
+                <div>
+                  <p className="font-medium">
+                    {home.flag} {home.nameFr} – {away.nameFr} {away.flag}
+                  </p>
+                  <p className="text-xs text-neutral-500">
+                    {formatFull(m.utcDate, timezone)} · Pari : {pred.home}-{pred.away}
+                    {m.score.fullTime.home != null && (
+                      <> · Résultat : {m.score.fullTime.home}-{m.score.fullTime.away}</>
+                    )}
+                  </p>
+                </div>
+                <span className={`shrink-0 font-bold tabular-nums ${tone}`}>+{pts}</span>
+              </Link>
+            );
+          })}
         </section>
       )}
 
