@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getMatches } from "@/lib/api";
+import { getResilientMatches } from "@/lib/results";
 import { createClient } from "@/lib/supabase/server";
 import { getLeaderboard } from "@/lib/leaderboard";
 import { PronosBoard, type DbPrediction } from "@/components/PronosBoard";
@@ -34,7 +34,7 @@ export default async function PronosPage() {
 
   const [{ data: preds }, matches, leaderboard] = await Promise.all([
     supabase.from("predictions").select("match_id, home, away").eq("user_id", user.id),
-    getMatches(),
+    getResilientMatches(),
     getLeaderboard(),
   ]);
 

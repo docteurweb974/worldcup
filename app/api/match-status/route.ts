@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { getMatches, isFinished, isLive } from "@/lib/api";
+import { isFinished, isLive } from "@/lib/api";
+import { getResilientMatches } from "@/lib/results";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +17,7 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   let matches;
   try {
-    matches = await getMatches();
+    matches = await getResilientMatches();
   } catch {
     return NextResponse.json({ finishedCount: 0, active: false, nextKickoffMs: null });
   }

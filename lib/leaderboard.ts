@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getMatches } from "@/lib/api";
+import { getResilientMatches } from "@/lib/results";
 import { POINTS, predictionPoints } from "@/lib/predictions";
 
 export interface LeaderboardEntry {
@@ -34,9 +34,9 @@ export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
     admin.from("profiles").select("id, username"),
   ]);
 
-  let matchesById = new Map<number, Awaited<ReturnType<typeof getMatches>>[number]>();
+  let matchesById = new Map<number, Awaited<ReturnType<typeof getResilientMatches>>[number]>();
   try {
-    const matches = await getMatches();
+    const matches = await getResilientMatches();
     matchesById = new Map(matches.map((m) => [m.id, m]));
   } catch {
     // API indisponible : les points restent à 0, le classement reste affichable.
