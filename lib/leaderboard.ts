@@ -77,5 +77,5 @@ async function computeLeaderboard(): Promise<LeaderboardEntry[]> {
  * les visiteurs) : évite de relire tous les pronos à chaque affichage.
  */
 export const getLeaderboard = unstable_cache(computeLeaderboard, ["leaderboard-v1"], {
-  revalidate: 60,
+  revalidate: 30,
 });

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getLeaderboard } from "@/lib/leaderboard";
 import { Leaderboard } from "@/components/Leaderboard";
+import { LivePointsRefresher } from "@/components/LivePointsRefresher";
 
 export default async function ClassementPronosPage() {
   const supabase = createClient();
@@ -19,6 +20,7 @@ export default async function ClassementPronosPage() {
         ← Mes pronos
       </Link>
       <Leaderboard entries={leaderboard} currentUserId={user.id} />
+      <LivePointsRefresher />
     </div>
   );
 }

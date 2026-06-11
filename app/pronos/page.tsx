@@ -5,6 +5,7 @@ import { getLeaderboard } from "@/lib/leaderboard";
 import { PronosBoard, type DbPrediction } from "@/components/PronosBoard";
 import { ImportLocalPredictions } from "@/components/ImportLocalPredictions";
 import { Leaderboard } from "@/components/Leaderboard";
+import { LivePointsRefresher } from "@/components/LivePointsRefresher";
 
 export default async function PronosPage() {
   const supabase = createClient();
@@ -55,6 +56,7 @@ export default async function PronosPage() {
         />
       </div>
       <PronosBoard matches={matches} initialPredictions={initialPredictions} />
+      <LivePointsRefresher />
     </div>
   );
 }
