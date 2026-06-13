@@ -87,6 +87,14 @@ async function upsertPrediction(matchId, home, away) {
   });
   if (!res.ok) throw new Error(`Supabase upsert ${res.status} : ${await res.text()}`);
 }
+async function allBotPredictions() {
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/predictions?user_id=eq.${BOT_ID}&select=match_id,home,away`,
+    { headers: sbHeaders },
+  );
+  if (!res.ok) return [];
+  return res.json();
+}
 async function existingBoosts() {
   const res = await fetch(
     `${SUPABASE_URL}/rest/v1/boosts?user_id=eq.${BOT_ID}&select=round_key,match_id`,
@@ -273,41 +281,46 @@ async function main() {
   }
   console.log(`Terminé : ${n}/${targets.length} prono(s) enregistré(s).`);
 
-  await placeBoosts(targets, scores, matches, now);
+  await placeBoosts(matches, now);
 }
 
 /**
- * Pose le Boost ×2 du bot : par journée de POULES qu'il vient de pronostiquer,
- * le match le plus « sûr » (plus gros écart de buts prédit ; jamais un nul).
- * Respecte les règles : 1 par journée, jamais sur une journée déjà verrouillée.
+ * Pose le Boost ×2 du bot. Pour CHAQUE journée de poules où il a un pronostic
+ * sur un match NON commencé, il boost le plus « sûr » (plus gros écart de buts
+ * prédit ; jamais un nul). 1 par journée, jamais sur une journée verrouillée
+ * (match boosté déjà démarré). Couvre donc les matchs J1 encore à jouer.
  */
-async function placeBoosts(targets, scores, matches, now) {
+async function placeBoosts(matches, now) {
   const byId = new Map(matches.map((m) => [m.id, m]));
-  const boosts = await existingBoosts().catch(() => []);
+  const [preds, boosts] = await Promise.all([
+    allBotPredictions().catch(() => []),
+    existingBoosts().catch(() => []),
+  ]);
+  const predById = new Map(preds.map((p) => [p.match_id, p]));
   const currentByRound = new Map(boosts.map((b) => [b.round_key, b.match_id]));
 
-  // Regroupe les pronos de poules de ce run par journée.
+  // Candidats : matchs de poules pronostiqués, NON commencés.
   const byRound = new Map();
-  for (const m of targets) {
+  for (const m of matches) {
     if (m.stage !== "GROUP_STAGE") continue;
-    const s = scores.get(m.id);
-    if (!s) continue;
+    if (new Date(m.utcDate).getTime() <= now) continue; // commencé → plus boostable
+    const p = predById.get(m.id);
+    if (!p) continue;
     const key = `J${m.matchday ?? 0}`;
     if (!byRound.has(key)) byRound.set(key, []);
-    byRound.get(key).push({ m, margin: Math.abs(s.home - s.away), s });
+    byRound.get(key).push({ m, margin: Math.abs(p.home - p.away), s: p });
   }
 
   for (const [roundKey, list] of byRound) {
-    // Journée déjà verrouillée (le match boosté a démarré) → on n'y touche pas.
+    // Journée verrouillée (le match boosté a démarré) → on n'y touche pas.
     const current = currentByRound.get(roundKey);
     if (current != null) {
       const cur = byId.get(current);
       if (cur && new Date(cur.utcDate).getTime() <= now) continue;
     }
-    // Match le plus décisif (écart > 0) ; on évite de booster un nul.
     const best = list.filter((x) => x.margin > 0).sort((a, b) => b.margin - a.margin)[0];
     if (!best) continue;
-    if (current === best.m.id) continue; // déjà posé là
+    if (current === best.m.id) continue; // déjà posé sur le bon match
     await upsertBoost(roundKey, best.m.id);
     console.log(`  ⚡ Boost ${roundKey} → #${best.m.id} ${label(best.m.homeTeam)} ${best.s.home}-${best.s.away} ${label(best.m.awayTeam)}`);
   }
