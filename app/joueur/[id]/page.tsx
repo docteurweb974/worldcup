@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getPlayerStats } from "@/lib/player-stats";
 import { earnedCount, BADGES } from "@/lib/badges";
 import { BadgeGrid } from "@/components/BadgeGrid";
+import { BadgeCelebration } from "@/components/BadgeCelebration";
 import { CountUp } from "@/components/CountUp";
 import { PagePlaceholder } from "@/components/PagePlaceholder";
 import { TEAM_BY_TLA } from "@/data/teams";
@@ -28,6 +29,12 @@ export default async function PalmaresPage({ params }: { params: { id: string } 
   const stats = await getPlayerStats(params.id);
   const team = profile.favorite_team ? TEAM_BY_TLA[profile.favorite_team] : undefined;
   const isMe = user.id === params.id;
+  const earnedBadges = BADGES.filter((b) => b.earned(stats)).map((b) => ({
+    id: b.id,
+    emoji: b.emoji,
+    title: b.title,
+    description: b.description,
+  }));
 
   return (
     <div className="mx-auto max-w-2xl animate-fade-in space-y-6 p-4">
@@ -52,6 +59,7 @@ export default async function PalmaresPage({ params }: { params: { id: string } 
       </header>
 
       <BadgeGrid stats={stats} />
+      {isMe && <BadgeCelebration userId={user.id} earned={earnedBadges} />}
     </div>
   );
 }
