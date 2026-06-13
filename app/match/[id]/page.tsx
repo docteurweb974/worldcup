@@ -1,7 +1,10 @@
 import { getResilientMatch } from "@/lib/results";
+import { isFinished } from "@/lib/api";
 import { createClient } from "@/lib/supabase/server";
 import { getMatchCommunity } from "@/lib/community";
+import { getStoredVideo } from "@/lib/videos";
 import { MatchDetail } from "@/components/MatchDetail";
+import { MatchHighlights } from "@/components/MatchHighlights";
 import { PagePlaceholder } from "@/components/PagePlaceholder";
 import type { ScorePrediction } from "@/lib/predictions";
 
@@ -32,12 +35,18 @@ export default async function MatchPage({ params }: { params: { id: string } }) 
   const started = new Date(match.utcDate).getTime() <= Date.now();
   const community = started ? await getMatchCommunity(id) : null;
 
+  // Résumé vidéo, uniquement si le match est terminé.
+  const video = isFinished(match.status) ? await getStoredVideo(id) : null;
+
   return (
-    <MatchDetail
-      match={match}
-      prediction={prediction}
-      isLoggedIn={!!user}
-      community={community}
-    />
+    <>
+      <MatchDetail
+        match={match}
+        prediction={prediction}
+        isLoggedIn={!!user}
+        community={community}
+      />
+      {video && <MatchHighlights youtubeId={video.youtube_id} title={video.title} />}
+    </>
   );
 }

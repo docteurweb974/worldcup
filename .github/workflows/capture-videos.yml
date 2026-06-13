@@ -1,0 +1,24 @@
+name: Capture résumés vidéo
+
+# Cherche les résumés beIN des matchs récemment terminés (toutes les heures pour
+# rester sous le quota YouTube). Pingue /api/capture-videos (protégé par CRON_SECRET).
+on:
+  schedule:
+    - cron: "0 * * * *" # toutes les heures
+  workflow_dispatch:
+
+concurrency:
+  group: capture-videos
+  cancel-in-progress: false
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Pinger l'endpoint de capture vidéo
+        run: |
+          curl -sS --max-time 60 \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "https://worldcup-livid-ten.vercel.app/api/capture-videos" \
+            -w "\nHTTP %{http_code}\n"
