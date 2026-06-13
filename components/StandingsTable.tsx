@@ -5,7 +5,9 @@ import { TEAM_BY_ID, displayTeam } from "@/data/teams";
 import { formatGroup, type StandingGroup, type StandingRow } from "@/lib/api";
 
 // Colonnes statistiques (clé technique → en-tête affiché).
+// Pts en premier : la colonne la plus importante reste visible sans scroller.
 const COLS: [keyof StandingRow, string][] = [
+  ["points", "Pts"],
   ["playedGames", "J"],
   ["won", "V"],
   ["draw", "N"],
@@ -13,7 +15,6 @@ const COLS: [keyof StandingRow, string][] = [
   ["goalsFor", "BP"],
   ["goalsAgainst", "BC"],
   ["goalDifference", "Diff"],
-  ["points", "Pts"],
 ];
 
 export function StandingsTable({ group }: { group: StandingGroup }) {
@@ -31,7 +32,10 @@ export function StandingsTable({ group }: { group: StandingGroup }) {
               <th className="px-2 py-1">#</th>
               <th className="px-2 py-1">Équipe</th>
               {COLS.map(([, label]) => (
-                <th key={label} className="px-2 py-1 text-center font-medium">
+                <th
+                  key={label}
+                  className={`px-2 py-1 text-center font-medium ${label === "Pts" ? "text-accent" : ""}`}
+                >
                   {label}
                 </th>
               ))}
@@ -55,7 +59,12 @@ export function StandingsTable({ group }: { group: StandingGroup }) {
                     {nameFr}
                   </td>
                   {COLS.map(([key, label]) => (
-                    <td key={label} className="px-2 py-2 text-center tabular-nums">
+                    <td
+                      key={label}
+                      className={`px-2 py-2 text-center tabular-nums ${
+                        label === "Pts" ? "font-bold text-accent" : ""
+                      }`}
+                    >
                       {row[key] as number}
                     </td>
                   ))}
