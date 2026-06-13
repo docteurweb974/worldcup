@@ -143,13 +143,15 @@ export function MatchDetail({
         <CommunityBar stats={community} homeName={home.nameFr} awayName={away.nameFr} />
       )}
 
-      <div className="text-center">
-        <IcsButton
-          matches={[match]}
-          filename={calendarFilename(match)}
-          label="Ajouter à mon calendrier"
-        />
-      </div>
+      {!isFinished(match.status) && (
+        <div className="text-center">
+          <IcsButton
+            matches={[match]}
+            filename={calendarFilename(match)}
+            label="Ajouter à mon calendrier"
+          />
+        </div>
+      )}
     </div>
   );
 }
