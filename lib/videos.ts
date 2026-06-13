@@ -9,9 +9,13 @@ const nameFrById = new Map(TEAMS.map((t) => [t.id, t.nameFr]));
 
 const norm = (s: string) =>
   s
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
     .toLowerCase()
+    .replace(/[áàâä]/g, "a")
+    .replace(/[éèêë]/g, "e")
+    .replace(/[íìîï]/g, "i")
+    .replace(/[óòôö]/g, "o")
+    .replace(/[úùûü]/g, "u")
+    .replace(/ç/g, "c")
     .replace(/\s+/g, " ")
     .trim();
 
