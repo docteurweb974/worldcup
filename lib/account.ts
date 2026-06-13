@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { getResilientMatches } from "@/lib/results";
+import { getUserBoosts } from "@/lib/boosts";
 import { predictionPoints } from "@/lib/predictions";
 
 export interface AccountSummary {
@@ -27,11 +28,16 @@ export async function getAccountSummary(): Promise<AccountSummary | null> {
   let points = 0;
   if (preds && preds.length > 0) {
     try {
-      const matches = await getResilientMatches();
+      const [matches, { ids: boosted }] = await Promise.all([
+        getResilientMatches(),
+        getUserBoosts(user.id),
+      ]);
       const byId = new Map(matches.map((m) => [m.id, m]));
       for (const p of preds) {
         const match = byId.get(p.match_id);
-        if (match) points += predictionPoints({ home: p.home, away: p.away }, match) ?? 0;
+        if (!match) continue;
+        const base = predictionPoints({ home: p.home, away: p.away }, match) ?? 0;
+        points += boosted.has(p.match_id) ? base * 2 : base;
       }
     } catch {
       // API indisponible : on affiche 0 plutôt que de casser l'en-tête.

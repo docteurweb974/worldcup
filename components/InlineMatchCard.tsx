@@ -16,11 +16,15 @@ export function InlineMatchCard({
   prediction,
   timezone,
   onSave,
+  isBoost = false,
+  onToggleBoost,
 }: {
   match: Match;
   prediction: ScorePrediction | null;
   timezone: TimezoneChoice;
   onSave: (matchId: number, score: ScorePrediction) => Promise<SaveResult>;
+  isBoost?: boolean;
+  onToggleBoost?: () => void;
 }) {
   const home = displayTeam(match.homeTeam.id, match.homeTeam.name);
   const away = displayTeam(match.awayTeam.id, match.awayTeam.name);
@@ -46,21 +50,25 @@ export function InlineMatchCard({
   if (isFinished(match.status)) {
     const ft = match.score.fullTime;
     const hasResult = ft.home != null && ft.away != null;
-    const pts = prediction && hasResult ? predictionPoints(prediction, match) ?? 0 : null;
+    const base = prediction && hasResult ? predictionPoints(prediction, match) ?? 0 : null;
+    const pts = base != null && isBoost ? base * 2 : base;
     const tone =
-      pts === POINTS.exact
+      base === POINTS.exact
         ? "text-green-600 dark:text-green-400"
-        : pts === POINTS.outcome
+        : base === POINTS.outcome
           ? "text-amber-600 dark:text-amber-400"
           : "text-red-600 dark:text-red-400";
     return (
       <Link
         href={`/match/${match.id}`}
-        className="block rounded-xl border border-neutral-200 p-3 dark:border-neutral-800"
+        className={`block rounded-xl border p-3 ${
+          isBoost ? "border-emerald-500 ring-1 ring-emerald-500" : "border-neutral-200 dark:border-neutral-800"
+        }`}
       >
         <div className="mb-1 flex items-center justify-between text-xs text-neutral-500">
           <span className="capitalize">
             {match.group ? formatGroup(match.group) : match.stage.replaceAll("_", " ").toLowerCase()}
+            {isBoost && <span className="ml-1 font-semibold text-emerald-600 dark:text-emerald-400">· ⚡ Boost</span>}
           </span>
           <span className="tabular-nums">{formatFull(match.utcDate, timezone)}</span>
         </div>
@@ -80,12 +88,35 @@ export function InlineMatchCard({
   }
 
   return (
-    <div className="rounded-xl border border-neutral-200 p-3 dark:border-neutral-800">
-      <div className="mb-2 flex items-center justify-between text-xs text-neutral-500">
+    <div
+      className={`rounded-xl border p-3 transition-colors ${
+        isBoost
+          ? "border-emerald-500 ring-1 ring-emerald-500"
+          : "border-neutral-200 dark:border-neutral-800"
+      }`}
+    >
+      <div className="mb-2 flex items-center justify-between gap-2 text-xs text-neutral-500">
         <span className="capitalize">
           {match.group ? formatGroup(match.group) : match.stage.replaceAll("_", " ").toLowerCase()}
         </span>
-        <span className="tabular-nums">{formatFull(match.utcDate, timezone)}</span>
+        <div className="flex items-center gap-2">
+          {onToggleBoost && (
+            <button
+              type="button"
+              aria-pressed={isBoost}
+              onClick={onToggleBoost}
+              title="Double les points de ce match (1 Boost par journée de poules)"
+              className={`rounded-full border px-2.5 py-0.5 font-bold transition active:scale-95 ${
+                isBoost
+                  ? "border-emerald-500 bg-emerald-500 text-white"
+                  : "border-amber-400 bg-amber-100 text-amber-800 hover:bg-amber-200 dark:bg-amber-400/15 dark:text-amber-300"
+              }`}
+            >
+              ⚡ {isBoost ? "Boost activé ✓" : "Boost ×2"}
+            </button>
+          )}
+          <span className="tabular-nums">{formatFull(match.utcDate, timezone)}</span>
+        </div>
       </div>
 
       <ScorePicker home={home} away={away} value={score} onChange={setScore} />

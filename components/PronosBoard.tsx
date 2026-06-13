@@ -6,7 +6,7 @@ import { usePreferences } from "./PreferencesProvider";
 import { InlineMatchCard } from "./InlineMatchCard";
 import { CountUp } from "./CountUp";
 import { BaremeCard } from "./BaremeCard";
-import { savePrediction } from "@/app/predictions/actions";
+import { savePrediction, setBoost, clearBoost } from "@/app/predictions/actions";
 import { formatFull } from "@/lib/timezone";
 import { displayTeam } from "@/data/teams";
 import { isFinished, type Match } from "@/lib/api";
@@ -43,9 +43,11 @@ function roundOf(m: Match): { key: string; label: string } {
 export function PronosBoard({
   matches,
   initialPredictions,
+  initialBoosts = {},
 }: {
   matches: Match[];
   initialPredictions: DbPrediction[];
+  initialBoosts?: Record<string, number>;
 }) {
   const { timezone } = usePreferences();
   const [preds, setPreds] = useState<Map<number, ScorePrediction>>(
@@ -53,11 +55,27 @@ export function PronosBoard({
   );
   const [openRound, setOpenRound] = useState<string | null>(null); // tout fermé par défaut
   const [hideFinished, setHideFinished] = useState(false);
+  // Boost : 1 par journée de poules (clé de tour → id du match boosté).
+  const [boosts, setBoosts] = useState<Map<string, number>>(
+    () => new Map(Object.entries(initialBoosts).map(([k, v]) => [k, Number(v)])),
+  );
+  const boostedIds = useMemo(() => new Set(boosts.values()), [boosts]);
 
   const handleSave = async (matchId: number, score: ScorePrediction) => {
     const res = await savePrediction(matchId, score.home, score.away);
     if (!res?.error) setPreds((prev) => new Map(prev).set(matchId, score));
     return res;
+  };
+
+  const toggleBoost = async (roundKey: string, matchId: number) => {
+    const prev = boosts;
+    const isCurrent = prev.get(roundKey) === matchId;
+    const next = new Map(prev);
+    if (isCurrent) next.delete(roundKey);
+    else next.set(roundKey, matchId);
+    setBoosts(next); // optimiste
+    const res = isCurrent ? await clearBoost(roundKey) : await setBoost(matchId);
+    if (res?.error) setBoosts(prev); // échec → on revient en arrière
   };
 
   // Progression : sur les seuls matchs encore pronostiquables.
@@ -99,13 +117,17 @@ export function PronosBoard({
   const evaluated = useMemo(() => {
     return matches
       .filter((m) => isFinished(m.status) && preds.has(m.id))
-      .map((m) => ({ m, pts: predictionPoints(preds.get(m.id)!, m) ?? 0 }))
+      .map((m) => {
+        const base = predictionPoints(preds.get(m.id)!, m) ?? 0;
+        const boosted = boostedIds.has(m.id);
+        return { m, base, boosted, pts: boosted ? base * 2 : base };
+      })
       .sort((a, b) => +new Date(b.m.utcDate) - +new Date(a.m.utcDate));
-  }, [matches, preds]);
+  }, [matches, preds, boostedIds]);
 
   const total = evaluated.reduce((s, x) => s + x.pts, 0);
-  const exact = evaluated.filter((x) => x.pts === POINTS.exact).length;
-  const good = evaluated.filter((x) => x.pts === POINTS.outcome).length;
+  const exact = evaluated.filter((x) => x.base === POINTS.exact).length;
+  const good = evaluated.filter((x) => x.base === POINTS.outcome).length;
 
   return (
     <div className="mx-auto max-w-2xl space-y-6 p-4">
@@ -211,6 +233,12 @@ export function PronosBoard({
                               prediction={preds.get(m.id) ?? null}
                               timezone={timezone}
                               onSave={handleSave}
+                              isBoost={boostedIds.has(m.id)}
+                              onToggleBoost={
+                                m.stage === "GROUP_STAGE"
+                                  ? () => toggleBoost(round.key, m.id)
+                                  : undefined
+                              }
                             />
                           ))}
                         </div>
@@ -227,25 +255,32 @@ export function PronosBoard({
       {evaluated.length > 0 && (
         <section className="space-y-2">
           <h2 className="font-bold">Récap des matchs terminés</h2>
-          {evaluated.map(({ m, pts }) => {
+          {evaluated.map(({ m, base, boosted, pts }) => {
             const home = displayTeam(m.homeTeam.id, m.homeTeam.name);
             const away = displayTeam(m.awayTeam.id, m.awayTeam.name);
             const pred = preds.get(m.id)!;
             const tone =
-              pts === POINTS.exact
+              base === POINTS.exact
                 ? "text-green-600 dark:text-green-400"
-                : pts === POINTS.outcome
+                : base === POINTS.outcome
                   ? "text-amber-600 dark:text-amber-400"
                   : "text-red-600 dark:text-red-400";
             return (
               <Link
                 key={m.id}
                 href={`/match/${m.id}`}
-                className="flex items-center justify-between gap-2 rounded-xl border border-neutral-200 p-3 text-sm dark:border-neutral-800"
+                className={`flex items-center justify-between gap-2 rounded-xl border p-3 text-sm ${
+                  boosted ? "border-emerald-500" : "border-neutral-200 dark:border-neutral-800"
+                }`}
               >
                 <div>
                   <p className="font-medium">
                     {home.flag} {home.nameFr} – {away.nameFr} {away.flag}
+                    {boosted && (
+                      <span className="ml-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                        ⚡
+                      </span>
+                    )}
                   </p>
                   <p className="text-xs text-neutral-500">
                     {formatFull(m.utcDate, timezone)} · Pari : {pred.home}-{pred.away}
@@ -254,7 +289,10 @@ export function PronosBoard({
                     )}
                   </p>
                 </div>
-                <span className={`shrink-0 font-bold tabular-nums ${tone}`}>+{pts}</span>
+                <span className={`shrink-0 font-bold tabular-nums ${tone}`}>
+                  +{pts}
+                  {boosted && base > 0 && <span className="text-emerald-600 dark:text-emerald-400"> (×2)</span>}
+                </span>
               </Link>
             );
           })}

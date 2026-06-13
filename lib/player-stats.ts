@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isFinished, roundKey } from "@/lib/api";
 import { getResilientMatches } from "@/lib/results";
+import { getUserBoosts } from "@/lib/boosts";
 import { getLeaderboard } from "@/lib/leaderboard";
 import { POINTS, predictionPoints } from "@/lib/predictions";
 import type { PlayerStats } from "@/lib/badges";
@@ -39,6 +40,7 @@ export async function getPlayerStats(userId: string): Promise<PlayerStats> {
     /* API indisponible : stats partielles */
   }
   const byId = new Map(matches.map((m) => [m.id, m]));
+  const { ids: boosted } = await getUserBoosts(userId);
 
   // Points, scores exacts et série, sur les matchs terminés (ordre chronologique).
   const finished = predList
@@ -53,9 +55,10 @@ export async function getPlayerStats(userId: string): Promise<PlayerStats> {
   let knockoutExact = false;
   let cleanSheetExact = false;
   for (const { p, m } of finished) {
-    const pts = predictionPoints({ home: p.home, away: p.away }, m!) ?? 0;
+    const base = predictionPoints({ home: p.home, away: p.away }, m!) ?? 0;
+    const pts = boosted.has(m!.id) ? base * 2 : base;
     points += pts;
-    if (pts === POINTS.exact) {
+    if (base === POINTS.exact) {
       exact += 1;
       if (m!.stage !== "GROUP_STAGE") knockoutExact = true;
       const ft = m!.score.fullTime;

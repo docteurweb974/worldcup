@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getResilientMatches } from "@/lib/results";
+import { getAllBoosts } from "@/lib/boosts";
 import { POINTS, predictionPoints } from "@/lib/predictions";
 
 export interface LeaderboardEntry {
@@ -29,9 +30,10 @@ export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
     return [];
   }
 
-  const [{ data: preds }, { data: profiles }] = await Promise.all([
+  const [{ data: preds }, { data: profiles }, boosts] = await Promise.all([
     admin.from("predictions").select("user_id, match_id, home, away"),
     admin.from("profiles").select("id, username"),
+    getAllBoosts(),
   ]);
 
   let matchesById = new Map<number, Awaited<ReturnType<typeof getResilientMatches>>[number]>();
@@ -47,11 +49,12 @@ export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
   for (const p of preds ?? []) {
     const match = matchesById.get(p.match_id);
     if (!match) continue;
-    const pts = predictionPoints({ home: p.home, away: p.away }, match);
-    if (pts === null) continue; // match pas terminé
+    const base = predictionPoints({ home: p.home, away: p.away }, match);
+    if (base === null) continue; // match pas terminé
+    const boosted = boosts.get(p.user_id)?.has(p.match_id) ?? false;
     const cur = agg.get(p.user_id) ?? { points: 0, exact: 0, played: 0 };
-    cur.points += pts;
-    if (pts === POINTS.exact) cur.exact += 1;
+    cur.points += boosted ? base * 2 : base;
+    if (base === POINTS.exact) cur.exact += 1;
     cur.played += 1;
     agg.set(p.user_id, cur);
   }
