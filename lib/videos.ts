@@ -5,7 +5,7 @@ import { TEAMS } from "@/data/teams";
 // Chaîne beIN SPORTS France (résumés de la Coupe du Monde, intégrables, FR + DOM-TOM).
 const BEIN_CHANNEL_ID = process.env.YOUTUBE_CHANNEL_ID || "UCfj4kQ6_mYO5r4hzX5KloVw";
 
-const nameFrById = new Map(TEAMS.map((t) => [t.id, t.nameFr]));
+const teamById = new Map(TEAMS.map((t) => [t.id, t]));
 
 const norm = (s: string) =>
   s
@@ -54,39 +54,35 @@ export async function getStoredVideo(matchId: number): Promise<StoredVideo | nul
   return data ? { youtube_id: data.youtube_id, title: data.title } : null;
 }
 
-/**
- * Cherche sur la chaîne beIN le résumé d'un match (titre type
- * « Résumé : MEXIQUE - AFRIQUE DU SUD … »). Renvoie l'ID vidéo ou null.
- */
-export async function findHighlight(
-  homeFr: string,
-  awayFr: string,
-  afterISO: string,
-  apiKey: string,
-): Promise<StoredVideo | null> {
-  const q = encodeURIComponent(`${homeFr} ${awayFr} résumé`);
+/** Une équipe est-elle citée dans le titre ? Nom français OU code 3 lettres (USA, CAN…). */
+function teamInTitle(normTitle: string, team: { nameFr: string; tla: string }): boolean {
+  if (normTitle.includes(norm(team.nameFr))) return true;
+  return new RegExp(`\\b${team.tla.toLowerCase()}\\b`).test(normTitle);
+}
+
+type Vid = { id: string; title: string };
+
+async function ytSearch(query: string, max: number, apiKey: string): Promise<Vid[]> {
   const url =
     `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${BEIN_CHANNEL_ID}` +
-    `&q=${q}&type=video&order=date&maxResults=10&publishedAfter=${encodeURIComponent(afterISO)}&key=${apiKey}`;
+    `&q=${encodeURIComponent(query)}&type=video&order=date&maxResults=${max}&key=${apiKey}`;
   const res = await fetch(url);
-  if (!res.ok) return null;
+  if (!res.ok) return [];
   const data = (await res.json()) as {
     items?: { id: { videoId: string }; snippet: { title: string } }[];
   };
-  const h = norm(homeFr);
-  const a = norm(awayFr);
-  for (const it of data.items ?? []) {
-    const t = norm(it.snippet.title);
-    if (t.includes("resume") && t.includes(h) && t.includes(a)) {
-      return { youtube_id: it.id.videoId, title: it.snippet.title };
-    }
-  }
-  return null;
+  return (data.items ?? []).map((it) => ({ id: it.id.videoId, title: it.snippet.title }));
 }
 
+type Team = { nameFr: string; tla: string };
+const resumeOf = (vids: Vid[], home: Team, away: Team): Vid | undefined =>
+  vids
+    .map((v) => ({ v, n: norm(v.title) }))
+    .find((x) => x.n.includes("resume") && teamInTitle(x.n, home) && teamInTitle(x.n, away))?.v;
+
 /**
- * Pour une liste de matchs terminés, recherche et mémorise les résumés manquants.
- * Renvoie le nombre de nouveaux résumés trouvés.
+ * Pour les matchs terminés sans résumé mémorisé, apparie chacun avec un résumé
+ * récent de beIN (titre contenant « résumé » + les 2 équipes). Renvoie le nb trouvés.
  */
 export async function captureVideos(
   finished: { id: number; homeId: number | null; awayId: number | null; utcDate: string }[],
@@ -100,23 +96,45 @@ export async function captureVideos(
   }
   const table = videoTable(admin);
 
-  // Résumés déjà connus.
   const { data: stored } = await table.from("match_videos").select("match_id, youtube_id, title");
   const known = new Set((stored ?? []).map((r) => r.match_id));
 
+  const pending = finished.filter(
+    (m) => !known.has(m.id) && m.homeId != null && m.awayId != null,
+  );
+  if (pending.length === 0) return 0;
+
+  // 1 recherche large → couvre la plupart des résumés récents (économe en quota).
+  const recent = await ytSearch("résumé", 50, apiKey);
+
+  const store = async (matchId: number, v: Vid) => {
+    await table
+      .from("match_videos")
+      .upsert([{ match_id: matchId, youtube_id: v.id, title: v.title }], { onConflict: "match_id" });
+  };
+
   let found = 0;
-  for (const m of finished) {
-    if (known.has(m.id) || m.homeId == null || m.awayId == null) continue;
-    const homeFr = nameFrById.get(m.homeId);
-    const awayFr = nameFrById.get(m.awayId);
-    if (!homeFr || !awayFr) continue;
-    const video = await findHighlight(homeFr, awayFr, m.utcDate, apiKey);
-    if (video) {
-      await table
-        .from("match_videos")
-        .upsert([{ match_id: m.id, youtube_id: video.youtube_id, title: video.title }], {
-          onConflict: "match_id",
-        });
+  const stillMissing: { id: number; home: Team; away: Team }[] = [];
+  for (const m of pending) {
+    const home = teamById.get(m.homeId!);
+    const away = teamById.get(m.awayId!);
+    if (!home || !away) continue;
+    const v = resumeOf(recent, home, away);
+    if (v) {
+      await store(m.id, v);
+      found += 1;
+    } else {
+      stillMissing.push({ id: m.id, home, away });
+    }
+  }
+
+  // Repli ciblé pour ceux que la recherche large a ratés (plafonné → quota maîtrisé).
+  const MAX_TARGETED = 3;
+  for (const m of stillMissing.slice(0, MAX_TARGETED)) {
+    const q = `${m.home.nameFr} ${m.away.nameFr} ${m.home.tla} ${m.away.tla} résumé`;
+    const v = resumeOf(await ytSearch(q, 10, apiKey), m.home, m.away);
+    if (v) {
+      await store(m.id, v);
       found += 1;
     }
   }
