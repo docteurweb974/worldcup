@@ -265,22 +265,22 @@ async function main() {
     `Fenêtre ${WINDOW_H} h | recherche ${RESEARCH_MODEL} + scoring ${SCORING_MODEL} | ${targets.length} match(s) à pronostiquer.`,
   );
   if (targets.length === 0) {
-    console.log("Rien à faire (aucun nouveau match dans la fenêtre). Aucun appel facturé.");
-    return;
+    console.log("Aucun nouveau match à pronostiquer (aucun appel IA facturé).");
+  } else {
+    const scores = await predictBatch(targets, matches, standings);
+    let n = 0;
+    for (const m of targets) {
+      const s = scores.get(m.id);
+      if (!s) continue;
+      await upsertPrediction(m.id, s.home, s.away);
+      n += 1;
+      console.log(`  ✓ #${m.id} ${label(m.homeTeam)} ${s.home}-${s.away} ${label(m.awayTeam)}`);
+    }
+    console.log(`Terminé : ${n}/${targets.length} prono(s) enregistré(s).`);
   }
 
-  const scores = await predictBatch(targets, matches, standings);
-
-  let n = 0;
-  for (const m of targets) {
-    const s = scores.get(m.id);
-    if (!s) continue;
-    await upsertPrediction(m.id, s.home, s.away);
-    n += 1;
-    console.log(`  ✓ #${m.id} ${label(m.homeTeam)} ${s.home}-${s.away} ${label(m.awayTeam)}`);
-  }
-  console.log(`Terminé : ${n}/${targets.length} prono(s) enregistré(s).`);
-
+  // Le Boost est (re)évalué à CHAQUE passage, même sans nouveau pronostic :
+  // il dépend des pronos déjà enregistrés, pas seulement de ceux du run.
   await placeBoosts(matches, now);
 }
 
