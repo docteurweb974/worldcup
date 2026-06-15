@@ -25,13 +25,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "matchs indisponibles" }, { status: 502 });
   }
 
-  // Limité aux matchs terminés récemment (beIN publie son résumé dans les heures
-  // qui suivent) → borne le nombre de recherches YouTube (quota).
-  const RECENT_MS = 12 * 3600 * 1000;
-  const now = Date.now();
+  // Tous les matchs terminés : captureVideos n'agit que sur ceux sans résumé,
+  // via un seul appel playlistItems (1 unité) → pas besoin de fenêtre.
   const finished = matches
     .filter((m) => isFinished(m.status) && m.score.fullTime.home != null)
-    .filter((m) => now - new Date(m.utcDate).getTime() < RECENT_MS)
     .map((m) => ({
       id: m.id,
       homeId: m.homeTeam.id,

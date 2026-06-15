@@ -61,28 +61,45 @@ function teamInTitle(normTitle: string, team: { nameFr: string; tla: string }): 
 }
 
 type Vid = { id: string; title: string };
+type Team = { nameFr: string; tla: string };
 
-async function ytSearch(query: string, max: number, apiKey: string): Promise<Vid[]> {
+// Playlist « uploads » de la chaîne = id de chaîne avec le préfixe UC → UU.
+const UPLOADS_PLAYLIST = "UU" + BEIN_CHANNEL_ID.slice(2);
+
+/**
+ * Uploads récents de la chaîne beIN via playlistItems (1 unité de quota, fiable —
+ * contrairement à search.list qui renvoie « accountDelegationForbidden »).
+ */
+async function fetchRecentUploads(apiKey: string): Promise<Vid[]> {
   const url =
-    `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${BEIN_CHANNEL_ID}` +
-    `&q=${encodeURIComponent(query)}&type=video&order=date&maxResults=${max}&key=${apiKey}`;
+    `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet` +
+    `&playlistId=${UPLOADS_PLAYLIST}&maxResults=50&key=${apiKey}`;
   const res = await fetch(url);
   if (!res.ok) return [];
   const data = (await res.json()) as {
-    items?: { id: { videoId: string }; snippet: { title: string } }[];
+    items?: { snippet: { title: string; resourceId: { videoId: string } } }[];
   };
-  return (data.items ?? []).map((it) => ({ id: it.id.videoId, title: it.snippet.title }));
+  return (data.items ?? []).map((it) => ({
+    id: it.snippet.resourceId.videoId,
+    title: it.snippet.title,
+  }));
 }
 
-type Team = { nameFr: string; tla: string };
+// Résumé complet d'un match (exclut les « Résumé mi-temps »).
 const resumeOf = (vids: Vid[], home: Team, away: Team): Vid | undefined =>
   vids
     .map((v) => ({ v, n: norm(v.title) }))
-    .find((x) => x.n.includes("resume") && teamInTitle(x.n, home) && teamInTitle(x.n, away))?.v;
+    .find(
+      (x) =>
+        x.n.includes("resume") &&
+        !x.n.includes("mi-temps") &&
+        teamInTitle(x.n, home) &&
+        teamInTitle(x.n, away),
+    )?.v;
 
 /**
  * Pour les matchs terminés sans résumé mémorisé, apparie chacun avec un résumé
- * récent de beIN (titre contenant « résumé » + les 2 équipes). Renvoie le nb trouvés.
+ * récent de beIN (titre « Résumé : … » + les 2 équipes). Renvoie le nb trouvés.
  */
 export async function captureVideos(
   finished: { id: number; homeId: number | null; awayId: number | null; utcDate: string }[],
@@ -104,39 +121,20 @@ export async function captureVideos(
   );
   if (pending.length === 0) return 0;
 
-  // 1 recherche large → couvre la plupart des résumés récents (économe en quota).
-  const recent = await ytSearch("résumé", 50, apiKey);
-
-  const store = async (matchId: number, v: Vid) => {
-    await table
-      .from("match_videos")
-      .upsert([{ match_id: matchId, youtube_id: v.id, title: v.title }], { onConflict: "match_id" });
-  };
+  const recent = await fetchRecentUploads(apiKey); // 1 appel couvre tous les récents
+  if (recent.length === 0) return 0;
 
   let found = 0;
-  const stillMissing: { id: number; home: Team; away: Team }[] = [];
   for (const m of pending) {
     const home = teamById.get(m.homeId!);
     const away = teamById.get(m.awayId!);
     if (!home || !away) continue;
     const v = resumeOf(recent, home, away);
-    if (v) {
-      await store(m.id, v);
-      found += 1;
-    } else {
-      stillMissing.push({ id: m.id, home, away });
-    }
-  }
-
-  // Repli ciblé pour ceux que la recherche large a ratés (plafonné → quota maîtrisé).
-  const MAX_TARGETED = 3;
-  for (const m of stillMissing.slice(0, MAX_TARGETED)) {
-    const q = `${m.home.nameFr} ${m.away.nameFr} ${m.home.tla} ${m.away.tla} résumé`;
-    const v = resumeOf(await ytSearch(q, 10, apiKey), m.home, m.away);
-    if (v) {
-      await store(m.id, v);
-      found += 1;
-    }
+    if (!v) continue;
+    await table
+      .from("match_videos")
+      .upsert([{ match_id: m.id, youtube_id: v.id, title: v.title }], { onConflict: "match_id" });
+    found += 1;
   }
   return found;
 }
