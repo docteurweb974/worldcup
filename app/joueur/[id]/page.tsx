@@ -2,9 +2,11 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getPlayerStats } from "@/lib/player-stats";
+import { getFinishedPredictionsByRound } from "@/lib/player-predictions";
 import { earnedCount, BADGES } from "@/lib/badges";
 import { BadgeGrid } from "@/components/BadgeGrid";
 import { BadgeCelebration } from "@/components/BadgeCelebration";
+import { PlayerPredictions } from "@/components/PlayerPredictions";
 import { CountUp } from "@/components/CountUp";
 import { PagePlaceholder } from "@/components/PagePlaceholder";
 import { TEAM_BY_TLA } from "@/data/teams";
@@ -26,7 +28,10 @@ export default async function PalmaresPage({ params }: { params: { id: string } 
     return <PagePlaceholder title="Joueur introuvable" step="vérifie le lien" />;
   }
 
-  const stats = await getPlayerStats(params.id);
+  const [stats, predRounds] = await Promise.all([
+    getPlayerStats(params.id),
+    getFinishedPredictionsByRound(params.id),
+  ]);
   const team = profile.favorite_team ? TEAM_BY_TLA[profile.favorite_team] : undefined;
   const isMe = user.id === params.id;
   const earnedBadges = BADGES.filter((b) => b.earned(stats)).map((b) => ({
@@ -59,6 +64,14 @@ export default async function PalmaresPage({ params }: { params: { id: string } 
       </header>
 
       <BadgeGrid stats={stats} />
+
+      <section className="space-y-2">
+        <h2 className="font-bold">
+          Pronos des matchs terminés {isMe ? "(toi)" : `· ${profile.username}`}
+        </h2>
+        <PlayerPredictions rounds={predRounds} isMe={isMe} />
+      </section>
+
       {isMe && <BadgeCelebration userId={user.id} earned={earnedBadges} />}
     </div>
   );
