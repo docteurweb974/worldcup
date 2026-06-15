@@ -38,6 +38,20 @@ function videoTable(admin: ReturnType<typeof createAdminClient>) {
   return admin as unknown as { from: (t: string) => VideoTable };
 }
 
+/** Tous les résumés mémorisés → Map<match_id, vidéo>. */
+export async function getAllVideos(): Promise<Map<number, StoredVideo>> {
+  const map = new Map<number, StoredVideo>();
+  let admin: ReturnType<typeof createAdminClient>;
+  try {
+    admin = createAdminClient();
+  } catch {
+    return map;
+  }
+  const { data } = await videoTable(admin).from("match_videos").select("match_id, youtube_id, title");
+  for (const r of data ?? []) map.set(r.match_id, { youtube_id: r.youtube_id, title: r.title });
+  return map;
+}
+
 /** Résumé vidéo mémorisé pour un match (pour l'affichage de la page). */
 export async function getStoredVideo(matchId: number): Promise<StoredVideo | null> {
   let admin: ReturnType<typeof createAdminClient>;
