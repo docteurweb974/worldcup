@@ -30,7 +30,7 @@ export function ResumesGallery({ sections }: { sections: ResumeSection[] }) {
   if (sections.length === 0) {
     return (
       <p className="p-6 text-center text-sm text-neutral-500">
-        Aucun résumé disponible pour l'instant. 🎬
+        Aucun résumé disponible pour le moment. 🎬
       </p>
     );
   }
