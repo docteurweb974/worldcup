@@ -4,6 +4,7 @@ import "./globals.css";
 import { PreferencesProvider } from "@/components/PreferencesProvider";
 import { AppShell } from "@/components/AppShell";
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
+import { WhatsNew } from "@/components/WhatsNew";
 import { getAccountSummary } from "@/lib/account";
 
 // Typo « athletic / competition » recommandée par le skill ui-ux-pro-max :
@@ -98,6 +99,7 @@ export default async function RootLayout({
       <body>
         <PreferencesProvider>
           <AppShell account={account}>{children}</AppShell>
+          {account && <WhatsNew userId={account.id} username={account.username} />}
         </PreferencesProvider>
         <ServiceWorkerRegister />
       </body>
