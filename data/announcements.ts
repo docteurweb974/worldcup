@@ -10,9 +10,20 @@ export interface Announcement {
   emoji: string;
   title: string;
   description: string;
+  href?: string; // si défini, le bouton de la slide y redirige
+  cta?: string; // libellé du bouton de redirection
 }
 
 export const ANNOUNCEMENTS: Announcement[] = [
+  {
+    id: "survivor",
+    emoji: "💀",
+    title: "Le Mode Survivor",
+    description:
+      "Chaque tour, choisis 1 équipe qui doit gagner. Une erreur et tu es éliminé. Le dernier survivant remporte +10 pts au classement !",
+    href: "/survivor",
+    cta: "Découvrir le mode 💀",
+  },
   {
     id: "player-predictions",
     emoji: "🔎",

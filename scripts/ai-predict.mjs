@@ -110,6 +110,21 @@ async function upsertBoost(roundKey, matchId) {
     body: JSON.stringify([{ user_id: BOT_ID, round_key: roundKey, match_id: matchId }]),
   });
 }
+async function existingSurvivorPicks() {
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/survivor_picks?user_id=eq.${BOT_ID}&select=round_key,match_id,team_id`,
+    { headers: sbHeaders },
+  );
+  if (!res.ok) return [];
+  return res.json();
+}
+async function upsertSurvivorPick(roundKey, matchId, teamId) {
+  await fetch(`${SUPABASE_URL}/rest/v1/survivor_picks`, {
+    method: "POST",
+    headers: { ...sbHeaders, Prefer: "resolution=merge-duplicates,return=minimal" },
+    body: JSON.stringify([{ user_id: BOT_ID, round_key: roundKey, match_id: matchId, team_id: teamId }]),
+  });
+}
 
 // ───────────────────────── Contexte tournoi ─────────────────────────
 function recentForm(teamId, all) {
@@ -282,6 +297,60 @@ async function main() {
   // Le Boost est (re)évalué à CHAQUE passage, même sans nouveau pronostic :
   // il dépend des pronos déjà enregistrés, pas seulement de ceux du run.
   await placeBoosts(matches, now);
+  await placeSurvivorPick(matches, now);
+}
+
+/**
+ * Choix Survivor du bot : pour le PREMIER tour non encore choisi (et non clos),
+ * il prend l'équipe qu'il prédit gagnante avec le plus gros écart, non déjà
+ * utilisée. 1 choix par passage, dans l'ordre des tours.
+ */
+async function placeSurvivorPick(matches, now) {
+  const ROUNDS = ["J1", "J2", "J3", "LAST_32", "LAST_16", "QUARTER_FINALS", "SEMI_FINALS", "FINAL"];
+  const rkOf = (m) => (m.stage === "GROUP_STAGE" ? `J${m.matchday ?? 0}` : m.stage);
+  const [preds, picks] = await Promise.all([
+    allBotPredictions().catch(() => []),
+    existingSurvivorPicks().catch(() => []),
+  ]);
+  const predById = new Map(preds.map((p) => [p.match_id, p]));
+  const pickedRounds = new Set(picks.map((p) => p.round_key));
+  const usedTeams = new Set(picks.map((p) => p.team_id));
+
+  const meta = {};
+  for (const m of matches) {
+    const k = rkOf(m);
+    if (!ROUNDS.includes(k)) continue;
+    meta[k] = meta[k] || { total: 0, fin: 0 };
+    meta[k].total += 1;
+    if (m.status === "FINISHED" && m.score.fullTime.home != null) meta[k].fin += 1;
+  }
+  const closed = (k) => meta[k] && meta[k].total > 0 && meta[k].fin >= meta[k].total;
+
+  for (const rk of ROUNDS) {
+    if (pickedRounds.has(rk)) continue; // tour déjà choisi
+    if (closed(rk)) return; // tour manqué (éliminé) → on s'arrête
+    const cands = matches
+      .filter((m) => rkOf(m) === rk && m.homeTeam.id != null && m.awayTeam.id != null)
+      .filter((m) => new Date(m.utcDate).getTime() > now)
+      .map((m) => {
+        const p = predById.get(m.id);
+        if (!p || p.home === p.away) return null;
+        const homeWin = p.home > p.away;
+        return {
+          m,
+          teamId: homeWin ? m.homeTeam.id : m.awayTeam.id,
+          teamName: homeWin ? m.homeTeam.name : m.awayTeam.name,
+          margin: Math.abs(p.home - p.away),
+        };
+      })
+      .filter((c) => c && !usedTeams.has(c.teamId))
+      .sort((a, b) => b.margin - a.margin);
+    if (cands.length === 0) return; // rien à choisir pour l'instant → prochain passage
+    const best = cands[0];
+    await upsertSurvivorPick(rk, best.m.id, best.teamId);
+    console.log(`  💀 Survivor ${rk} → ${best.teamName} (#${best.m.id}, écart ${best.margin})`);
+    return; // un seul tour par passage
+  }
 }
 
 /**

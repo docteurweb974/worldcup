@@ -49,6 +49,18 @@ export default async function PronosPage() {
   return (
     <div className="space-y-4 pb-4">
       <div className="mx-auto max-w-2xl space-y-4 px-4 pt-4">
+        <Link
+          href="/survivor"
+          className="flex items-center justify-between gap-3 rounded-2xl border border-amber-400 bg-gradient-to-r from-amber-50 to-orange-50 p-4 transition hover:brightness-[1.02] dark:from-amber-500/10 dark:to-orange-500/10"
+        >
+          <div>
+            <p className="font-bold">🔥 Mode Survivor</p>
+            <p className="text-sm text-neutral-600 dark:text-neutral-400">
+              1 équipe par tour qui doit gagner. Dernier survivant → +10 pts !
+            </p>
+          </div>
+          <span className="shrink-0 text-xl text-accent" aria-hidden="true">→</span>
+        </Link>
         <ImportLocalPredictions />
         <Leaderboard
           entries={leaderboard}

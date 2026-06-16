@@ -84,6 +84,9 @@ export function AuthButton({ account }: { account: AccountSummary | null }) {
           <Link role="menuitem" href="/resumes" onClick={() => setOpen(false)} className={itemCls}>
             Résumés 🎬
           </Link>
+          <Link role="menuitem" href="/survivor" onClick={() => setOpen(false)} className={itemCls}>
+            Mode Survivor 💀
+          </Link>
           <form action={logout}>
             <button
               role="menuitem"

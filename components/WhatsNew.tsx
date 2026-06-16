@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { ANNOUNCEMENTS, type Announcement } from "@/data/announcements";
 
 /**
@@ -9,6 +10,7 @@ import { ANNOUNCEMENTS, type Announcement } from "@/data/announcements";
  * mémorisées (localStorage par utilisateur) → plus jamais remontrées.
  */
 export function WhatsNew({ userId, username }: { userId: string; username?: string }) {
+  const router = useRouter();
   const [queue, setQueue] = useState<Announcement[]>([]);
   const [i, setI] = useState(0);
 
@@ -94,10 +96,19 @@ export function WhatsNew({ userId, username }: { userId: string; username?: stri
           </button>
           <button
             type="button"
-            onClick={() => (last ? close() : setI((v) => v + 1))}
+            onClick={() => {
+              if (a.href) {
+                close();
+                router.push(a.href);
+              } else if (last) {
+                close();
+              } else {
+                setI((v) => v + 1);
+              }
+            }}
             className="min-h-tap rounded-full bg-accent px-6 font-semibold text-white transition active:scale-95"
           >
-            {last ? "C'est parti !" : "Suivant →"}
+            {a.href ? a.cta ?? "Découvrir →" : last ? "C'est parti !" : "Suivant →"}
           </button>
         </div>
       </div>

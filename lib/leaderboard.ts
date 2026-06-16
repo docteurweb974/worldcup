@@ -1,7 +1,10 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getResilientMatches } from "@/lib/results";
 import { getAllBoosts } from "@/lib/boosts";
+import { getSurvivorWinners } from "@/lib/survivor";
 import { POINTS, predictionPoints } from "@/lib/predictions";
+
+const SURVIVOR_BONUS = 10;
 
 export interface LeaderboardEntry {
   userId: string;
@@ -30,10 +33,11 @@ export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
     return [];
   }
 
-  const [{ data: preds }, { data: profiles }, boosts] = await Promise.all([
+  const [{ data: preds }, { data: profiles }, boosts, survivorWinners] = await Promise.all([
     admin.from("predictions").select("user_id, match_id, home, away"),
     admin.from("profiles").select("id, username"),
     getAllBoosts(),
+    getSurvivorWinners(),
   ]);
 
   let matchesById = new Map<number, Awaited<ReturnType<typeof getResilientMatches>>[number]>();
@@ -62,10 +66,11 @@ export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
   // Tous les joueurs inscrits apparaissent (0 pt s'ils n'ont pas encore marqué).
   const entries = (profiles ?? []).map((prof) => {
     const a = agg.get(prof.id) ?? { points: 0, exact: 0, played: 0 };
+    const bonus = survivorWinners.has(prof.id) ? SURVIVOR_BONUS : 0;
     return {
       userId: prof.id,
       username: prof.username,
-      points: a.points,
+      points: a.points + bonus,
       exact: a.exact,
       played: a.played,
     };
