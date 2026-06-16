@@ -17,6 +17,7 @@ export function InlineMatchCard({
   timezone,
   onSave,
   isBoost = false,
+  roundHasBoost = false,
   onToggleBoost,
 }: {
   match: Match;
@@ -24,6 +25,7 @@ export function InlineMatchCard({
   timezone: TimezoneChoice;
   onSave: (matchId: number, score: ScorePrediction) => Promise<SaveResult>;
   isBoost?: boolean;
+  roundHasBoost?: boolean; // un boost est déjà posé sur cette journée
   onToggleBoost?: () => void;
 }) {
   const home = displayTeam(match.homeTeam.id, match.homeTeam.name);
@@ -100,19 +102,31 @@ export function InlineMatchCard({
           {match.group ? formatGroup(match.group) : match.stage.replaceAll("_", " ").toLowerCase()}
         </span>
         <div className="flex items-center gap-2">
-          {onToggleBoost && (
+          {onToggleBoost && isBoost && (
             <button
               type="button"
-              aria-pressed={isBoost}
+              aria-pressed
+              onClick={onToggleBoost}
+              title="Boost actif sur ce match — clique pour le retirer"
+              className="rounded-full border border-emerald-500 bg-emerald-500 px-2.5 py-0.5 font-bold text-white transition active:scale-95"
+            >
+              ⚡ Boost activé ✓
+            </button>
+          )}
+          {onToggleBoost && !isBoost && roundHasBoost && (
+            <span className="rounded-full border border-neutral-200 px-2.5 py-0.5 font-semibold text-neutral-400 dark:border-neutral-700">
+              Boost déjà utilisé
+            </span>
+          )}
+          {onToggleBoost && !isBoost && !roundHasBoost && (
+            <button
+              type="button"
+              aria-pressed={false}
               onClick={onToggleBoost}
               title="Double les points de ce match (1 Boost par journée de poules)"
-              className={`rounded-full border px-2.5 py-0.5 font-bold transition active:scale-95 ${
-                isBoost
-                  ? "border-emerald-500 bg-emerald-500 text-white"
-                  : "border-amber-400 bg-amber-100 text-amber-800 hover:bg-amber-200 dark:bg-amber-400/15 dark:text-amber-300"
-              }`}
+              className="rounded-full border border-amber-400 bg-amber-100 px-2.5 py-0.5 font-bold text-amber-800 transition hover:bg-amber-200 active:scale-95 dark:bg-amber-400/15 dark:text-amber-300"
             >
-              ⚡ {isBoost ? "Boost activé ✓" : "Boost ×2"}
+              ⚡ Boost ×2
             </button>
           )}
           <span className="tabular-nums">{formatFull(match.utcDate, timezone)}</span>

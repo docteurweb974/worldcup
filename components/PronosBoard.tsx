@@ -234,6 +234,7 @@ export function PronosBoard({
                               timezone={timezone}
                               onSave={handleSave}
                               isBoost={boostedIds.has(m.id)}
+                              roundHasBoost={boosts.has(round.key)}
                               onToggleBoost={
                                 m.stage === "GROUP_STAGE"
                                   ? () => toggleBoost(round.key, m.id)
