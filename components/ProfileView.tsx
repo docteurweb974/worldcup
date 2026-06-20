@@ -15,7 +15,6 @@ type Tab = "stats" | "palmares" | "pronos" | "settings";
 
 export function ProfileView({
   username,
-  teamFlag,
   flagBg,
   rank,
   stats,
@@ -24,7 +23,6 @@ export function ProfileView({
   favoriteTla,
 }: {
   username: string;
-  teamFlag: string;
   flagBg: string | null;
   rank: number;
   stats: PlayerStats;
@@ -46,7 +44,7 @@ export function ProfileView({
   return (
     <div className="animate-fade-in pb-6">
       {/* Hero : drapeau du pays favori en fond */}
-      <div className="relative bg-gradient-to-br from-accent to-accent/70 px-4 pb-6 pt-8 text-center text-white">
+      <div className="relative flex min-h-56 flex-col justify-end bg-gradient-to-br from-accent to-accent/70 px-4 pb-8 pt-10 text-center text-white">
         <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
           {flagBg && (
             <div
@@ -59,10 +57,7 @@ export function ProfileView({
         </div>
         {isMe && <HeroTeamSelector current={favoriteTla} />}
         <div className="relative drop-shadow">
-          <div className="mx-auto grid h-24 w-24 place-items-center rounded-full bg-black/30 text-5xl shadow-lg ring-4 ring-white/60 backdrop-blur">
-            {teamFlag || "🏳️"}
-          </div>
-          <h1 className="mt-3 text-2xl font-bold">
+          <h1 className="text-2xl font-bold">
             {username}
             {isMe && <span className="text-white/70"> (toi)</span>}
           </h1>

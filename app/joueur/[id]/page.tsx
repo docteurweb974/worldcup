@@ -42,7 +42,6 @@ export default async function PalmaresPage({ params }: { params: { id: string } 
     <>
       <ProfileView
         username={profile.username}
-        teamFlag={team?.flag ?? ""}
         flagBg={team ? flagImageUrl(team) : null}
         rank={stats.rank}
         stats={stats}

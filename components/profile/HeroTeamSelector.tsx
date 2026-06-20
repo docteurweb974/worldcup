@@ -46,10 +46,9 @@ export function HeroTeamSelector({ current }: { current: string | null }) {
         onClick={() => setOpen((o) => !o)}
         aria-label="Choisir mon équipe favorite"
         aria-expanded={open}
-        className="flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-sm font-semibold text-white ring-1 ring-white/30 backdrop-blur transition hover:bg-white/25"
+        className="flex items-center gap-1 rounded-full bg-white/15 px-2.5 py-1.5 text-white ring-1 ring-white/30 backdrop-blur transition hover:bg-white/25"
       >
-        <span className="text-lg" aria-hidden="true">{currentTeam?.flag ?? "🏳️"}</span>
-        <span className="max-w-[6rem] truncate">{currentTeam?.nameFr ?? "Mon équipe"}</span>
+        <span className="text-xl leading-none" aria-hidden="true">{currentTeam?.flag ?? "🏳️"}</span>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-3.5 w-3.5" aria-hidden="true">
           <path d="m6 9 6 6 6-6" />
         </svg>
