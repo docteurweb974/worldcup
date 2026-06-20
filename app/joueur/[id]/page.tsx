@@ -1,15 +1,12 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getPlayerStats } from "@/lib/player-stats";
 import { getFinishedPredictionsByRound } from "@/lib/player-predictions";
-import { earnedCount, BADGES } from "@/lib/badges";
-import { BadgeGrid } from "@/components/BadgeGrid";
+import { BADGES } from "@/lib/badges";
 import { BadgeCelebration } from "@/components/BadgeCelebration";
-import { PlayerPredictions } from "@/components/PlayerPredictions";
-import { CountUp } from "@/components/CountUp";
+import { ProfileView } from "@/components/ProfileView";
 import { PagePlaceholder } from "@/components/PagePlaceholder";
-import { TEAM_BY_TLA } from "@/data/teams";
+import { TEAM_BY_TLA, flagImageUrl } from "@/data/teams";
 
 export default async function PalmaresPage({ params }: { params: { id: string } }) {
   const supabase = createClient();
@@ -42,37 +39,18 @@ export default async function PalmaresPage({ params }: { params: { id: string } 
   }));
 
   return (
-    <div className="mx-auto max-w-2xl animate-fade-in space-y-6 p-4">
-      <Link href="/pronos/classement" className="text-sm text-neutral-500 hover:text-accent">
-        ← Classement
-      </Link>
-
-      <header className="text-center">
-        <div className="text-5xl" aria-hidden="true">
-          {team?.flag ?? "🏆"}
-        </div>
-        <h1 className="mt-1 text-2xl font-bold">
-          {profile.username}
-          {isMe && <span className="text-neutral-400"> (toi)</span>}
-        </h1>
-        <p className="mt-1 text-sm text-neutral-500">
-          <CountUp value={stats.points} /> pts
-          {stats.rank > 0 && <> · {stats.rank}ᵉ au classement</>}
-          {" · "}
-          {earnedCount(stats)}/{BADGES.length} badges
-        </p>
-      </header>
-
-      <BadgeGrid stats={stats} />
-
-      <section className="space-y-2">
-        <h2 className="font-bold">
-          Pronos des matchs terminés {isMe ? "(toi)" : `· ${profile.username}`}
-        </h2>
-        <PlayerPredictions rounds={predRounds} isMe={isMe} />
-      </section>
-
+    <>
+      <ProfileView
+        username={profile.username}
+        teamFlag={team?.flag ?? ""}
+        flagBg={team ? flagImageUrl(team) : null}
+        rank={stats.rank}
+        stats={stats}
+        isMe={isMe}
+        predRounds={predRounds}
+        favoriteTla={profile.favorite_team ?? null}
+      />
       {isMe && <BadgeCelebration userId={user.id} earned={earnedBadges} />}
-    </div>
+    </>
   );
 }

@@ -43,7 +43,7 @@ function PredRow({ it }: { it: PredItem }) {
 
 /** Pronos d'un joueur sur les matchs terminés, en accordéon par journée/tour. */
 export function PlayerPredictions({ rounds, isMe }: { rounds: PredRound[]; isMe: boolean }) {
-  const [open, setOpen] = useState<string | null>(rounds[0]?.key ?? null);
+  const [open, setOpen] = useState<string | null>(null); // tout fermé par défaut
 
   if (rounds.length === 0) {
     return (

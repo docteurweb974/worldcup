@@ -9,6 +9,8 @@ import type { PlayerStats } from "@/lib/badges";
 const EMPTY: PlayerStats = {
   predictions: 0,
   exact: 0,
+  good: 0,
+  played: 0,
   points: 0,
   streak: 0,
   fullMatchdays: 0,
@@ -50,6 +52,7 @@ export async function getPlayerStats(userId: string): Promise<PlayerStats> {
 
   let points = 0;
   let exact = 0;
+  let good = 0;
   let streak = 0;
   let run = 0;
   let knockoutExact = false;
@@ -63,6 +66,8 @@ export async function getPlayerStats(userId: string): Promise<PlayerStats> {
       if (m!.stage !== "GROUP_STAGE") knockoutExact = true;
       const ft = m!.score.fullTime;
       if (ft.home === 0 || ft.away === 0) cleanSheetExact = true;
+    } else if (base === POINTS.outcome) {
+      good += 1;
     }
     if (pts > 0) {
       run += 1;
@@ -96,6 +101,8 @@ export async function getPlayerStats(userId: string): Promise<PlayerStats> {
   return {
     predictions: predList.length,
     exact,
+    good,
+    played: finished.length,
     points,
     streak,
     fullMatchdays,

@@ -3,6 +3,8 @@
 export interface PlayerStats {
   predictions: number; // nombre de pronostics enregistrés
   exact: number; // scores exacts trouvés
+  good: number; // bons résultats (issue correcte, score inexact)
+  played: number; // pronostics sur des matchs terminés
   points: number; // total de points
   streak: number; // plus longue série de bons pronos (points > 0)
   fullMatchdays: number; // journées/tours entièrement pronostiqués
