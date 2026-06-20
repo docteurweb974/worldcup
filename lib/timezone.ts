@@ -90,6 +90,21 @@ export function dayKey(iso: string, tz: TimezoneChoice): string {
   return `${p.year}-${String(p.month).padStart(2, "0")}-${String(p.day).padStart(2, "0")}`;
 }
 
+/** Puce de date pour la barre du calendrier : { weekday: "mar.", day: 16 }. */
+export function dayChip(iso: string, tz: TimezoneChoice): { weekday: string; day: number } {
+  const d = new Date(iso);
+  const weekday = new Intl.DateTimeFormat("fr-FR", {
+    timeZone: TIMEZONES[tz],
+    weekday: "short",
+  }).format(d);
+  return { weekday, day: getZonedParts(d, tz).day };
+}
+
+/** Clé du jour courant (« 2026-06-20 ») dans le fuseau choisi. */
+export function todayKey(tz: TimezoneChoice): string {
+  return dayKey(new Date().toISOString(), tz);
+}
+
 /** Heure (0-23) dans le fuseau choisi — utile pour les salutations créoles. */
 export function getHourInTimezone(date: Date, tz: TimezoneChoice): number {
   return getZonedParts(date, tz).hour;
