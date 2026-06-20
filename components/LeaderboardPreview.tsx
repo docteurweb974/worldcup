@@ -39,7 +39,7 @@ export function LeaderboardPreview({
     <div className="rounded-2xl border border-neutral-200 bg-white/90 p-4 backdrop-blur dark:border-neutral-800 dark:bg-neutral-900/90">
       <div className="flex items-center justify-between">
         <h2 className="font-bold">Classement 🏆</h2>
-        <Link href="/pronos" className="text-sm font-medium text-accent">
+        <Link href="/classements" className="text-sm font-medium text-accent">
           Tout voir
         </Link>
       </div>

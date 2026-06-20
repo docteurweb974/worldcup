@@ -1,11 +1,9 @@
 import Link from "next/link";
 import { getResilientMatches } from "@/lib/results";
 import { createClient } from "@/lib/supabase/server";
-import { getLeaderboard } from "@/lib/leaderboard";
 import { getUserBoosts } from "@/lib/boosts";
 import { PronosBoard, type DbPrediction } from "@/components/PronosBoard";
 import { ImportLocalPredictions } from "@/components/ImportLocalPredictions";
-import { Leaderboard } from "@/components/Leaderboard";
 import { LivePointsRefresher } from "@/components/LivePointsRefresher";
 
 export default async function PronosPage() {
@@ -33,10 +31,9 @@ export default async function PronosPage() {
     );
   }
 
-  const [{ data: preds }, matches, leaderboard, boosts] = await Promise.all([
+  const [{ data: preds }, matches, boosts] = await Promise.all([
     supabase.from("predictions").select("match_id, home, away").eq("user_id", user.id),
     getResilientMatches(),
-    getLeaderboard(),
     getUserBoosts(user.id),
   ]);
 
@@ -62,12 +59,6 @@ export default async function PronosPage() {
           <span className="shrink-0 text-xl text-accent" aria-hidden="true">→</span>
         </Link>
         <ImportLocalPredictions />
-        <Leaderboard
-          entries={leaderboard}
-          currentUserId={user.id}
-          limit={10}
-          moreHref="/classements"
-        />
       </div>
       <PronosBoard
         matches={matches}
