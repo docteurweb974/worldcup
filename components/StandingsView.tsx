@@ -13,8 +13,7 @@ export function StandingsView({ standings }: { standings: StandingGroup[] }) {
   }
 
   return (
-    <div className="mx-auto max-w-2xl animate-fade-in space-y-8 p-4">
-      <h1 className="text-xl font-bold">Classements 📊</h1>
+    <div className="space-y-8">
       {standings.map((group, i) => (
         <StandingsTable key={group.group ?? `${group.stage}-${i}`} group={group} />
       ))}

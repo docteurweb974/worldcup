@@ -66,7 +66,7 @@ export default async function PronosPage() {
           entries={leaderboard}
           currentUserId={user.id}
           limit={10}
-          moreHref="/pronos/classement"
+          moreHref="/classements"
         />
       </div>
       <PronosBoard

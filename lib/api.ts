@@ -104,6 +104,33 @@ export async function getStandings(): Promise<StandingGroup[]> {
   return (data.standings ?? []).filter((s) => s.type === "TOTAL");
 }
 
+export interface Scorer {
+  player: string;
+  teamName: string;
+  teamTla: string | null;
+  goals: number;
+  assists: number | null;
+}
+
+/** Meilleurs buteurs de la Coupe du Monde (football-data /scorers). */
+export async function getScorers(): Promise<Scorer[]> {
+  const data = await fdFetch<{
+    scorers: {
+      player: { name: string };
+      team: { name: string; tla: string | null };
+      goals: number;
+      assists: number | null;
+    }[];
+  }>(`${WC}/scorers?limit=20`, 300);
+  return (data.scorers ?? []).map((s) => ({
+    player: s.player?.name ?? "?",
+    teamName: s.team?.name ?? "",
+    teamTla: s.team?.tla ?? null,
+    goals: s.goals ?? 0,
+    assists: s.assists ?? null,
+  }));
+}
+
 /** Un match est-il en cours (score live à afficher) ? */
 export function isLive(status: MatchStatus): boolean {
   return status === "IN_PLAY" || status === "PAUSED";

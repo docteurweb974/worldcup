@@ -11,8 +11,10 @@ export interface LeaderboardEntry {
   username: string;
   points: number;
   exact: number;
+  good: number;
   played: number;
   rank: number;
+  favoriteTla: string | null;
 }
 
 /**
@@ -35,7 +37,7 @@ export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
 
   const [{ data: preds }, { data: profiles }, boosts, survivorWinners] = await Promise.all([
     admin.from("predictions").select("user_id, match_id, home, away"),
-    admin.from("profiles").select("id, username"),
+    admin.from("profiles").select("id, username, favorite_team"),
     getAllBoosts(),
     getSurvivorWinners(),
   ]);
@@ -48,7 +50,7 @@ export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
     // API indisponible : les points restent à 0, le classement reste affichable.
   }
 
-  const agg = new Map<string, { points: number; exact: number; played: number }>();
+  const agg = new Map<string, { points: number; exact: number; good: number; played: number }>();
 
   for (const p of preds ?? []) {
     const match = matchesById.get(p.match_id);
@@ -56,23 +58,26 @@ export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
     const base = predictionPoints({ home: p.home, away: p.away }, match);
     if (base === null) continue; // match pas terminé
     const boosted = boosts.get(p.user_id)?.has(p.match_id) ?? false;
-    const cur = agg.get(p.user_id) ?? { points: 0, exact: 0, played: 0 };
+    const cur = agg.get(p.user_id) ?? { points: 0, exact: 0, good: 0, played: 0 };
     cur.points += boosted ? base * 2 : base;
     if (base === POINTS.exact) cur.exact += 1;
+    else if (base === POINTS.outcome) cur.good += 1;
     cur.played += 1;
     agg.set(p.user_id, cur);
   }
 
   // Tous les joueurs inscrits apparaissent (0 pt s'ils n'ont pas encore marqué).
   const entries = (profiles ?? []).map((prof) => {
-    const a = agg.get(prof.id) ?? { points: 0, exact: 0, played: 0 };
+    const a = agg.get(prof.id) ?? { points: 0, exact: 0, good: 0, played: 0 };
     const bonus = survivorWinners.has(prof.id) ? SURVIVOR_BONUS : 0;
     return {
       userId: prof.id,
       username: prof.username,
       points: a.points + bonus,
       exact: a.exact,
+      good: a.good,
       played: a.played,
+      favoriteTla: (prof as { favorite_team?: string | null }).favorite_team ?? null,
     };
   });
 

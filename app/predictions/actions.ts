@@ -42,7 +42,7 @@ export async function savePrediction(
 
 const revalidateScores = () => {
   revalidatePath("/pronos");
-  revalidatePath("/pronos/classement");
+  revalidatePath("/classements");
   revalidatePath("/", "layout");
 };
 
