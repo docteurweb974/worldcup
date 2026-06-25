@@ -8,6 +8,8 @@ import { PlayerPredictions } from "./PlayerPredictions";
 import { UsernameForm } from "./profile/UsernameForm";
 import { FavoriteTeamPicker } from "./profile/FavoriteTeamPicker";
 import { HeroTeamSelector } from "./profile/HeroTeamSelector";
+import { NotificationsToggle } from "./pwa/NotificationsToggle";
+import { InstallButton } from "./pwa/InstallButton";
 import { type PlayerStats } from "@/lib/badges";
 import type { PredRound } from "@/lib/player-predictions";
 
@@ -119,6 +121,8 @@ export function ProfileView({
 
         {tab === "settings" && isMe && (
           <div className="space-y-4">
+            <InstallButton />
+            <NotificationsToggle />
             <section className="space-y-3 rounded-2xl border border-neutral-200 p-4 dark:border-neutral-800">
               <h2 className="font-bold">Pseudo</h2>
               <UsernameForm current={username} />

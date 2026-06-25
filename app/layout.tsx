@@ -85,6 +85,25 @@ const themeInitScript = `
 })();
 `;
 
+/*
+  Capture l'événement d'installabilité PWA dès le chargement (Chrome le déclenche
+  avant l'hydratation React) et le stocke sur window pour que le bouton « Ajouter »
+  puisse lancer l'installateur natif au clic.
+*/
+const installCaptureScript = `
+(function () {
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault();
+    window.__bip = e;
+    window.dispatchEvent(new Event('bip-ready'));
+  });
+  window.addEventListener('appinstalled', function () {
+    window.__bip = null;
+    window.dispatchEvent(new Event('bip-installed'));
+  });
+})();
+`;
+
 export default async function RootLayout({
   children,
 }: {
@@ -95,6 +114,7 @@ export default async function RootLayout({
     <html lang="fr" className={`${display.variable} ${body.variable}`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        <script dangerouslySetInnerHTML={{ __html: installCaptureScript }} />
       </head>
       <body>
         <PreferencesProvider>

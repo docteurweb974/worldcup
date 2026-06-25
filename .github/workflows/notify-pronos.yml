@@ -1,0 +1,40 @@
+name: Rappel pronos
+
+on:
+  # Toutes les 15 min : le script ne notifie que dans la fenêtre 45–75 min avant
+  # le 1er match du jour, une seule fois (verrou notification_log).
+  schedule:
+    - cron: "*/15 * * * *"
+  # Déclenchement manuel : coche « force » pour un envoi de test immédiat.
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Envoi de test immédiat à tous les abonnés"
+        type: boolean
+        default: false
+
+concurrency:
+  group: notify-pronos
+  cancel-in-progress: false
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Envoyer le rappel
+        run: node scripts/notify-pronos.mjs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          FOOTBALL_DATA_API_KEY: ${{ secrets.FOOTBALL_DATA_API_KEY }}
+          VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          VAPID_SUBJECT: ${{ secrets.VAPID_SUBJECT }}
+          FORCE: ${{ inputs.force && '1' || '' }}
