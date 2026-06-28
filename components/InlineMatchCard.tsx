@@ -98,8 +98,18 @@ export function InlineMatchCard({
       }`}
     >
       <div className="mb-2 flex items-center justify-between gap-2 text-xs text-neutral-500">
-        <span className="capitalize">
-          {match.group ? formatGroup(match.group) : match.stage.replaceAll("_", " ").toLowerCase()}
+        <span className="flex items-center gap-1.5">
+          <span className="capitalize">
+            {match.group ? formatGroup(match.group) : match.stage.replaceAll("_", " ").toLowerCase()}
+          </span>
+          {match.stage !== "GROUP_STAGE" && (
+            <span
+              title="Points comptés sur le score à 90’ (hors prolongation et tirs au but)"
+              className="rounded-full bg-neutral-100 px-1.5 py-0.5 text-[10px] font-medium normal-case text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400"
+            >
+              🕒 score à 90’
+            </span>
+          )}
         </span>
         <div className="flex items-center gap-2">
           {onToggleBoost && isBoost && (

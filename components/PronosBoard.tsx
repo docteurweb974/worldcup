@@ -226,12 +226,6 @@ export function PronosBoard({
                     >
                       <div className="overflow-hidden">
                         <div className="space-y-2 border-t border-neutral-200 p-3 dark:border-neutral-800">
-                          {round.matches[0]?.stage !== "GROUP_STAGE" && (
-                            <p className="rounded-lg bg-neutral-100 px-3 py-2 text-xs text-neutral-500 dark:bg-neutral-800/60">
-                              🕒 Points calculés sur le score à la fin du temps réglementaire (90’),
-                              hors prolongation et tirs au but.
-                            </p>
-                          )}
                           {round.shown.map((m) => (
                             <InlineMatchCard
                               key={m.id}

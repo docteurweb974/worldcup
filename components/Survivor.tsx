@@ -109,8 +109,7 @@ export function Survivor({ data }: { data: SurvivorData }) {
         </ul>
         <p className="border-t border-neutral-200 px-4 py-2.5 text-xs text-neutral-500 dark:border-neutral-800">
           En phase finale, c’est le <b>qualifié réel</b> qui compte : une victoire en{" "}
-          <b>prolongation</b> ou aux <b>tirs au but</b> te fait passer (contrairement aux pronos,
-          comptés sur le score à 90’).
+          <b>prolongation</b> ou aux <b>tirs au but</b> te fait passer suivant.
         </p>
       </div>
 
