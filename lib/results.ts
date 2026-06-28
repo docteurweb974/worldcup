@@ -22,7 +22,14 @@ export async function getResilientMatches(): Promise<Match[]> {
   }
 
   // `match_results` n'est pas dans les types générés → accès typé localement.
-  type ResultRow = { match_id: number; home: number; away: number };
+  // home/away = fullTime (affichage) ; reg_home/reg_away = score à 90' (scoring).
+  type ResultRow = {
+    match_id: number;
+    home: number;
+    away: number;
+    reg_home: number | null;
+    reg_away: number | null;
+  };
   const db = admin as unknown as {
     from: (table: string) => {
       select: (cols: string) => Promise<{ data: ResultRow[] | null }>;
@@ -31,9 +38,14 @@ export async function getResilientMatches(): Promise<Match[]> {
   };
 
   // Résultats déjà mémorisés.
-  const { data: stored } = await db.from("match_results").select("match_id, home, away");
-  const known = new Map<number, { home: number; away: number }>(
-    (stored ?? []).map((r) => [r.match_id, { home: r.home, away: r.away }]),
+  const { data: stored } = await db
+    .from("match_results")
+    .select("match_id, home, away, reg_home, reg_away");
+  const known = new Map<number, KnownResult>(
+    (stored ?? []).map((r) => [
+      r.match_id,
+      { home: r.home, away: r.away, regHome: r.reg_home, regAway: r.reg_away },
+    ]),
   );
 
   // Write-through : on ne capture un score QUE si le match est réellement terminé.
@@ -42,10 +54,14 @@ export async function getResilientMatches(): Promise<Match[]> {
   // glitche en « FINISHED » alors que le match est encore en cours.
   const now = Date.now();
   const MIN_ELAPSED_MS = 110 * 60 * 1000;
-  const toStore: { match_id: number; home: number; away: number }[] = [];
+  const toStore: ResultRow[] = [];
   for (const m of matches) {
     const h = m.score.fullTime.home;
     const a = m.score.fullTime.away;
+    // Score à 90' (temps réglementaire) : present si prolongation/TAB, sinon = fullTime.
+    const reg = m.score.regularTime;
+    const regHome = reg?.home ?? h;
+    const regAway = reg?.away ?? a;
     const elapsed = now - new Date(m.utcDate).getTime();
     if (
       isFinished(m.status) &&
@@ -54,8 +70,8 @@ export async function getResilientMatches(): Promise<Match[]> {
       a != null &&
       !known.has(m.id)
     ) {
-      known.set(m.id, { home: h, away: a });
-      toStore.push({ match_id: m.id, home: h, away: a });
+      known.set(m.id, { home: h, away: a, regHome, regAway });
+      toStore.push({ match_id: m.id, home: h, away: a, reg_home: regHome, reg_away: regAway });
     }
   }
   if (toStore.length > 0) {
@@ -70,8 +86,11 @@ export async function getResilientMatch(id: number): Promise<Match | undefined> 
   return (await getResilientMatches()).find((m) => m.id === id);
 }
 
+/** Score mémorisé : fullTime (home/away) + score à 90' (regHome/regAway, peut être null). */
+type KnownResult = { home: number; away: number; regHome: number | null; regAway: number | null };
+
 /** Applique les scores mémorisés au flux live (force le statut « terminé »). */
-function overlay(matches: Match[], known: Map<number, { home: number; away: number }>): Match[] {
+function overlay(matches: Match[], known: Map<number, KnownResult>): Match[] {
   // On superpose les scores mémorisés (et on force le statut « terminé »).
   return matches.map((m) => {
     const r = known.get(m.id);
@@ -79,10 +98,15 @@ function overlay(matches: Match[], known: Map<number, { home: number; away: numb
     const winner =
       m.score.winner ??
       (r.home > r.away ? "HOME_TEAM" : r.home < r.away ? "AWAY_TEAM" : "DRAW");
+    const score: Match["score"] = { ...m.score, winner, fullTime: { home: r.home, away: r.away } };
+    // Restaure aussi le score à 90' mémorisé (résilience du scoring phases finales).
+    if (r.regHome != null && r.regAway != null) {
+      score.regularTime = { home: r.regHome, away: r.regAway };
+    }
     return {
       ...m,
       status: isFinished(m.status) ? m.status : "FINISHED",
-      score: { ...m.score, winner, fullTime: { home: r.home, away: r.away } },
+      score,
     };
   });
 }

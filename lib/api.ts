@@ -38,6 +38,9 @@ export interface Match {
     winner: "HOME_TEAM" | "AWAY_TEAM" | "DRAW" | null;
     fullTime: { home: number | null; away: number | null };
     halfTime: { home: number | null; away: number | null };
+    // Score à la fin du temps réglementaire (90'). Présent seulement quand le
+    // match est allé en prolongation/TAB ; absent sinon (fullTime = score à 90').
+    regularTime?: { home: number | null; away: number | null } | null;
   };
 }
 
