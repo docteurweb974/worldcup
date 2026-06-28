@@ -16,6 +16,15 @@ export interface Announcement {
 
 export const ANNOUNCEMENTS: Announcement[] = [
   {
+    id: "knockout-90min",
+    emoji: "🕒",
+    title: "Phases finales : pronos sur 90 minutes",
+    description:
+      "Pour les matchs à élimination, tes pronostics sont jugés sur le score à la fin du temps réglementaire (90'). La prolongation et les tirs au but ne comptent pas pour les points.",
+    href: "/pronos",
+    cta: "Voir mes pronos",
+  },
+  {
     id: "survivor",
     emoji: "💀",
     title: "Le Mode Survivor",
