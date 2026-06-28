@@ -104,10 +104,15 @@ export function InlineMatchCard({
           </span>
           {match.stage !== "GROUP_STAGE" && (
             <span
-              title="Points comptés sur le score à 90’ (hors prolongation et tirs au but)"
-              className="rounded-full bg-neutral-100 px-1.5 py-0.5 text-[10px] font-medium normal-case text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400"
+              title="Points comptés sur le score à 90 min (hors prolongation et tirs au but)"
+              className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold normal-case text-amber-700 dark:bg-amber-400/15 dark:text-amber-300"
             >
-              🕒 score à 90’
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3" aria-hidden="true">
+                <circle cx="12" cy="13" r="8" />
+                <path d="M12 13V9" />
+                <path d="M9 2h6" />
+              </svg>
+              90 min
             </span>
           )}
         </span>
