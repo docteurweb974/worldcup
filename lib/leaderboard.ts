@@ -2,7 +2,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getResilientMatches } from "@/lib/results";
 import { getAllBoosts } from "@/lib/boosts";
 import { getSurvivorWinners } from "@/lib/survivor";
-import { POINTS, predictionPoints } from "@/lib/predictions";
+import { POINTS, predictionPoints, qualifierBonus, type Qualifier } from "@/lib/predictions";
 
 const SURVIVOR_BONUS = 10;
 
@@ -36,7 +36,7 @@ export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
   }
 
   const [{ data: preds }, { data: profiles }, boosts, survivorWinners] = await Promise.all([
-    admin.from("predictions").select("user_id, match_id, home, away"),
+    admin.from("predictions").select("*"),
     admin.from("profiles").select("id, username, favorite_team"),
     getAllBoosts(),
     getSurvivorWinners(),
@@ -58,8 +58,12 @@ export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
     const base = predictionPoints({ home: p.home, away: p.away }, match);
     if (base === null) continue; // match pas terminé
     const boosted = boosts.get(p.user_id)?.has(p.match_id) ?? false;
+    const bonus = qualifierBonus(
+      { home: p.home, away: p.away, qualifier: (p as { qualifier?: Qualifier | null }).qualifier ?? null },
+      match,
+    );
     const cur = agg.get(p.user_id) ?? { points: 0, exact: 0, good: 0, played: 0 };
-    cur.points += boosted ? base * 2 : base;
+    cur.points += (boosted ? base * 2 : base) + bonus;
     if (base === POINTS.exact) cur.exact += 1;
     else if (base === POINTS.outcome) cur.good += 1;
     cur.played += 1;

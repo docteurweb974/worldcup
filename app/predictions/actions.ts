@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getMatch, getMatches } from "@/lib/api";
+import { hasQualifierOption, type Qualifier } from "@/lib/predictions";
 import { deleteBoost, getUserBoosts, writeBoost } from "@/lib/boosts";
 
 export type SaveState = { error?: string; ok?: boolean } | undefined;
@@ -15,6 +16,7 @@ export async function savePrediction(
   matchId: number,
   home: number,
   away: number,
+  qualifier?: Qualifier | null,
 ): Promise<SaveState> {
   const supabase = createClient();
   const {
@@ -29,9 +31,24 @@ export async function savePrediction(
     return { error: "Trop tard : le match a déjà commencé." };
   }
 
-  const { error } = await supabase
-    .from("predictions")
-    .upsert({ user_id: user.id, match_id: matchId, home, away }, { onConflict: "user_id,match_id" });
+  // Le qualifié n'est retenu que sur un nul, en phase finale (8es+).
+  const qual =
+    home === away && hasQualifierOption(match.stage) && (qualifier === "home" || qualifier === "away")
+      ? qualifier
+      : null;
+
+  // `qualifier` hors types générés → builder casté.
+  const { error } = await (
+    supabase.from("predictions") as unknown as {
+      upsert: (
+        r: Record<string, unknown>,
+        o: { onConflict: string },
+      ) => Promise<{ error: unknown }>;
+    }
+  ).upsert(
+    { user_id: user.id, match_id: matchId, home, away, qualifier: qual },
+    { onConflict: "user_id,match_id" },
+  );
   if (error) return { error: "Enregistrement impossible." };
 
   revalidatePath(`/match/${matchId}`);

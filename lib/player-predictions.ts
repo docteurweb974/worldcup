@@ -2,7 +2,7 @@ import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getResilientMatches } from "@/lib/results";
 import { getUserBoosts } from "@/lib/boosts";
-import { predictionPoints } from "@/lib/predictions";
+import { predictionPoints, qualifierBonus, type Qualifier } from "@/lib/predictions";
 import { isFinished, type Match } from "@/lib/api";
 import { displayTeam } from "@/data/teams";
 
@@ -56,7 +56,7 @@ export async function getFinishedPredictionsByRound(userId: string): Promise<Pre
   }
 
   const [{ data: preds }, { ids: boosted }, matches] = await Promise.all([
-    admin.from("predictions").select("match_id, home, away").eq("user_id", userId),
+    admin.from("predictions").select("*").eq("user_id", userId),
     getUserBoosts(userId),
     getResilientMatches().catch(() => []),
   ]);
@@ -66,7 +66,9 @@ export async function getFinishedPredictionsByRound(userId: string): Promise<Pre
   for (const p of preds ?? []) {
     const m = byId.get(p.match_id);
     if (!m || !isFinished(m.status) || m.score.fullTime.home == null) continue;
+    const qualifier = (p as { qualifier?: Qualifier | null }).qualifier ?? null;
     const base = predictionPoints({ home: p.home, away: p.away }, m) ?? 0;
+    const bonus = qualifierBonus({ home: p.home, away: p.away, qualifier }, m);
     const isB = boosted.has(m.id);
     const home = displayTeam(m.homeTeam.id, m.homeTeam.name);
     const away = displayTeam(m.awayTeam.id, m.awayTeam.name);
@@ -78,7 +80,7 @@ export async function getFinishedPredictionsByRound(userId: string): Promise<Pre
       awayFr: away.nameFr,
       result: `${m.score.fullTime.home}-${m.score.fullTime.away}`,
       pred: `${p.home}-${p.away}`,
-      pts: isB ? base * 2 : base,
+      pts: (isB ? base * 2 : base) + bonus,
       boosted: isB,
       utcDate: m.utcDate,
     };

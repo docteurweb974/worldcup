@@ -3,7 +3,7 @@ import { isFinished, roundKey } from "@/lib/api";
 import { getResilientMatches } from "@/lib/results";
 import { getUserBoosts } from "@/lib/boosts";
 import { getLeaderboard } from "@/lib/leaderboard";
-import { POINTS, predictionPoints } from "@/lib/predictions";
+import { POINTS, predictionPoints, qualifierBonus, type Qualifier } from "@/lib/predictions";
 import type { PlayerStats } from "@/lib/badges";
 
 const EMPTY: PlayerStats = {
@@ -30,7 +30,7 @@ export async function getPlayerStats(userId: string): Promise<PlayerStats> {
   }
 
   const [{ data: preds }, { data: profile }] = await Promise.all([
-    admin.from("predictions").select("match_id, home, away").eq("user_id", userId),
+    admin.from("predictions").select("*").eq("user_id", userId),
     admin.from("profiles").select("favorite_team").eq("id", userId).maybeSingle(),
   ]);
   const predList = preds ?? [];
@@ -58,8 +58,10 @@ export async function getPlayerStats(userId: string): Promise<PlayerStats> {
   let knockoutExact = false;
   let cleanSheetExact = false;
   for (const { p, m } of finished) {
+    const qualifier = (p as { qualifier?: Qualifier | null }).qualifier ?? null;
     const base = predictionPoints({ home: p.home, away: p.away }, m!) ?? 0;
-    const pts = boosted.has(m!.id) ? base * 2 : base;
+    const bonus = qualifierBonus({ home: p.home, away: p.away, qualifier }, m!);
+    const pts = (boosted.has(m!.id) ? base * 2 : base) + bonus;
     points += pts;
     if (base === POINTS.exact) {
       exact += 1;

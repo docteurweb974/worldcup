@@ -32,7 +32,7 @@ export default async function PronosPage() {
   }
 
   const [{ data: preds }, matches, boosts] = await Promise.all([
-    supabase.from("predictions").select("match_id, home, away").eq("user_id", user.id),
+    supabase.from("predictions").select("*").eq("user_id", user.id),
     getResilientMatches(),
     getUserBoosts(user.id),
   ]);
@@ -41,6 +41,7 @@ export default async function PronosPage() {
     matchId: p.match_id,
     home: p.home,
     away: p.away,
+    qualifier: (p as { qualifier?: "home" | "away" | null }).qualifier ?? null,
   }));
 
   return (

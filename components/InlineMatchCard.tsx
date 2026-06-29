@@ -6,7 +6,14 @@ import { ScorePicker } from "./ScorePicker";
 import { displayTeam } from "@/data/teams";
 import { formatGroup, isFinished, type Match } from "@/lib/api";
 import { formatFull, type TimezoneChoice } from "@/lib/timezone";
-import { POINTS, predictionPoints, type ScorePrediction } from "@/lib/predictions";
+import {
+  POINTS,
+  predictionPoints,
+  qualifierBonus,
+  hasQualifierOption,
+  type ScorePrediction,
+  type Qualifier,
+} from "@/lib/predictions";
 
 type SaveResult = { error?: string; ok?: boolean } | undefined;
 
@@ -31,21 +38,32 @@ export function InlineMatchCard({
   const home = displayTeam(match.homeTeam.id, match.homeTeam.name);
   const away = displayTeam(match.awayTeam.id, match.awayTeam.name);
 
-  const [score, setScore] = useState<ScorePrediction>(prediction ?? { home: 0, away: 0 });
+  const [score, setScore] = useState<ScorePrediction>(
+    prediction ? { home: prediction.home, away: prediction.away } : { home: 0, away: 0 },
+  );
+  const [qualifier, setQualifier] = useState<Qualifier | null>(prediction?.qualifier ?? null);
   const [savedScore, setSavedScore] = useState<ScorePrediction | null>(prediction);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Tie-break « qualifié » : proposé sur un nul, en phase finale (8es+).
+  const showQualifier = hasQualifierOption(match.stage) && score.home === score.away;
+  const effQualifier = showQualifier ? qualifier : null;
+
   const dirty =
-    !savedScore || savedScore.home !== score.home || savedScore.away !== score.away;
+    !savedScore ||
+    savedScore.home !== score.home ||
+    savedScore.away !== score.away ||
+    (savedScore.qualifier ?? null) !== effQualifier;
 
   const save = async () => {
     setSaving(true);
     setError(null);
-    const res = await onSave(match.id, score);
+    const payload: ScorePrediction = { home: score.home, away: score.away, qualifier: effQualifier };
+    const res = await onSave(match.id, payload);
     setSaving(false);
     if (res?.error) setError(res.error);
-    else setSavedScore({ ...score });
+    else setSavedScore(payload);
   };
 
   // Match terminé : carte verrouillée affichant le résultat + ton pari + points.
@@ -53,7 +71,8 @@ export function InlineMatchCard({
     const ft = match.score.fullTime;
     const hasResult = ft.home != null && ft.away != null;
     const base = prediction && hasResult ? predictionPoints(prediction, match) ?? 0 : null;
-    const pts = base != null && isBoost ? base * 2 : base;
+    const bonus = prediction ? qualifierBonus(prediction, match) : 0;
+    const pts = base != null ? (isBoost ? base * 2 : base) + bonus : null;
     const tone =
       base === POINTS.exact
         ? "text-green-600 dark:text-green-400"
@@ -84,6 +103,17 @@ export function InlineMatchCard({
         </div>
         <p className="mt-1 text-xs text-neutral-500">
           {prediction ? `Ton pari : ${prediction.home}-${prediction.away}` : "Pas de prono"}
+          {prediction?.qualifier && hasQualifierOption(match.stage) && (
+            <>
+              {" "}· Qualifié :{" "}
+              {prediction.qualifier === "home"
+                ? `${home.flag} ${home.nameFr}`
+                : `${away.flag} ${away.nameFr}`}
+              {bonus > 0 && (
+                <span className="font-semibold text-amber-600 dark:text-amber-400"> ✓ +2</span>
+              )}
+            </>
+          )}
         </p>
       </Link>
     );
@@ -149,6 +179,36 @@ export function InlineMatchCard({
       </div>
 
       <ScorePicker home={home} away={away} value={score} onChange={setScore} />
+
+      {showQualifier && (
+        <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-2.5 dark:border-amber-400/20 dark:bg-amber-400/10">
+          <p className="mb-2 text-center text-xs font-medium text-neutral-600 dark:text-neutral-300">
+            Match nul à 90’ → qui se qualifie ?{" "}
+            <span className="font-semibold text-amber-700 dark:text-amber-400">+2 pts</span>
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            {(["home", "away"] as const).map((side) => {
+              const team = side === "home" ? home : away;
+              const sel = qualifier === side;
+              return (
+                <button
+                  key={side}
+                  type="button"
+                  aria-pressed={sel}
+                  onClick={() => setQualifier(sel ? null : side)}
+                  className={`min-h-tap rounded-lg border px-2 text-sm font-medium transition active:scale-[0.98] ${
+                    sel
+                      ? "border-amber-400 bg-amber-100 font-semibold text-amber-800 dark:border-amber-400/40 dark:bg-amber-400/20 dark:text-amber-200"
+                      : "border-neutral-300 bg-white hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-900 dark:hover:bg-neutral-800"
+                  }`}
+                >
+                  {team.flag} {team.nameFr}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {error && (
         <p role="alert" className="mt-2 text-center text-xs text-red-600 dark:text-red-400">

@@ -1,9 +1,14 @@
 import { isFinished, type Match, type Outcome } from "./api";
 
+/** Équipe désignée comme qualifiée (tie-break sur un nul en phase finale). */
+export type Qualifier = "home" | "away";
+
 /** Score pronostiqué pour un match. */
 export interface ScorePrediction {
   home: number;
   away: number;
+  // Phase finale (8es+) : sur un prono nul, équipe que le joueur voit se qualifier.
+  qualifier?: Qualifier | null;
 }
 
 /** Barème de points. */
@@ -11,7 +16,42 @@ export const POINTS = {
   exact: 5, // score exact
   outcome: 2, // bon résultat (vainqueur / nul) mais score inexact
   wrong: 0, // mauvais résultat
+  qualifier: 2, // bonus : bon qualifié sur un nul à 90' (8es+)
 } as const;
+
+/** Tours où l'option « choisir le qualifié » s'applique : à partir des 8es. */
+const QUALIFIER_STAGES = new Set([
+  "LAST_16",
+  "QUARTER_FINALS",
+  "SEMI_FINALS",
+  "THIRD_PLACE",
+  "FINAL",
+]);
+
+/** Le tie-break « qualifié » est-il proposé sur ce tour ? (8es et au-delà) */
+export function hasQualifierOption(stage: string): boolean {
+  return QUALIFIER_STAGES.has(stage);
+}
+
+/**
+ * Bonus « qualifié » (+2) : sur un match à élimination (8es+) terminé sur un nul
+ * à 90', si le joueur a désigné l'équipe qui s'est réellement qualifiée
+ * (prolongation / tirs au but compris). 0 sinon.
+ */
+export function qualifierBonus(pred: ScorePrediction, match: Match): number {
+  if (!pred.qualifier || !hasQualifierOption(match.stage) || !isFinished(match.status)) return 0;
+  const reg = match.score.regularTime;
+  const home = reg?.home ?? match.score.fullTime.home;
+  const away = reg?.away ?? match.score.fullTime.away;
+  if (home == null || away == null || home !== away) return 0; // pas un nul à 90'
+  const advanced =
+    match.score.winner === "HOME_TEAM"
+      ? "home"
+      : match.score.winner === "AWAY_TEAM"
+        ? "away"
+        : null;
+  return advanced && advanced === pred.qualifier ? POINTS.qualifier : 0;
+}
 
 /** Issue (home/draw/away) déduite d'un score. */
 export function outcomeOfScore(home: number, away: number): Outcome {

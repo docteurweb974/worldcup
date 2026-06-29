@@ -65,6 +65,16 @@ const formatGroup = (g) => {
 const label = (t) => t?.name || (t?.id ? `#${t.id}` : "À déterminer");
 const clamp = (n) => Math.max(0, Math.min(9, Math.round(Number(n) || 0)));
 
+// Tie-break « qualifié » (à partir des 8es) : sur un prono nul, équipe qui passe.
+const QUALIFIER_STAGES = new Set([
+  "LAST_16",
+  "QUARTER_FINALS",
+  "SEMI_FINALS",
+  "THIRD_PLACE",
+  "FINAL",
+]);
+const hasQualifierOption = (stage) => QUALIFIER_STAGES.has(stage);
+
 // ───────────────────────── Supabase (REST) ─────────────────────────
 const sbHeaders = {
   apikey: SUPABASE_KEY,
@@ -79,11 +89,11 @@ async function existingPredictions() {
   if (!res.ok) throw new Error(`Supabase GET ${res.status} : ${await res.text()}`);
   return res.json();
 }
-async function upsertPrediction(matchId, home, away) {
+async function upsertPrediction(matchId, home, away, qualifier = null) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/predictions`, {
     method: "POST",
     headers: { ...sbHeaders, Prefer: "resolution=merge-duplicates,return=minimal" },
-    body: JSON.stringify([{ user_id: BOT_ID, match_id: matchId, home, away }]),
+    body: JSON.stringify([{ user_id: BOT_ID, match_id: matchId, home, away, qualifier }]),
   });
   if (!res.ok) throw new Error(`Supabase upsert ${res.status} : ${await res.text()}`);
 }
@@ -235,8 +245,11 @@ async function predictBatch(targets, all, standings) {
           `=== Matchs à pronostiquer ===\n${fixtures}\n\n` +
           `Donne pour CHAQUE match un score final plausible (buts entiers réalistes, ` +
           `généralement 0 à 4 par équipe). Réponds UNIQUEMENT avec du JSON valide, sans texte ` +
-          `autour, au format : {"predictions":[{"match_id":<int>,"home":<int>,"away":<int>}]} ` +
-          `couvrant tous les matchs listés.`,
+          `autour, au format : {"predictions":[{"match_id":<int>,"home":<int>,"away":<int>,` +
+          `"qualifier":"home"|"away"}]} couvrant tous les matchs listés. Le champ "qualifier" ` +
+          `ne concerne QUE les matchs à élimination directe (8es de finale et au-delà) : indique ` +
+          `l'équipe ("home" ou "away") qui se qualifierait en cas de match nul (prolongation / tirs ` +
+          `au but) ; omets-le pour les matchs de poules.`,
       },
     ],
   });
@@ -250,7 +263,9 @@ async function predictBatch(targets, all, standings) {
   }
   const valid = new Set(targets.map((m) => m.id));
   for (const p of parsed?.predictions ?? []) {
-    if (valid.has(p.match_id)) result.set(p.match_id, { home: clamp(p.home), away: clamp(p.away) });
+    if (!valid.has(p.match_id)) continue;
+    const qualifier = p.qualifier === "home" || p.qualifier === "away" ? p.qualifier : null;
+    result.set(p.match_id, { home: clamp(p.home), away: clamp(p.away), qualifier });
   }
   return result;
 }
@@ -287,9 +302,14 @@ async function main() {
     for (const m of targets) {
       const s = scores.get(m.id);
       if (!s) continue;
-      await upsertPrediction(m.id, s.home, s.away);
+      // Qualifié retenu uniquement sur un nul, en phase finale (8es+).
+      const qual = s.home === s.away && hasQualifierOption(m.stage) ? s.qualifier ?? "home" : null;
+      await upsertPrediction(m.id, s.home, s.away, qual);
       n += 1;
-      console.log(`  ✓ #${m.id} ${label(m.homeTeam)} ${s.home}-${s.away} ${label(m.awayTeam)}`);
+      console.log(
+        `  ✓ #${m.id} ${label(m.homeTeam)} ${s.home}-${s.away} ${label(m.awayTeam)}` +
+          (qual ? ` [qualifié: ${qual}]` : ""),
+      );
     }
     console.log(`Terminé : ${n}/${targets.length} prono(s) enregistré(s).`);
   }

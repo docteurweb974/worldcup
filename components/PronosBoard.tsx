@@ -10,7 +10,7 @@ import { savePrediction, setBoost, clearBoost } from "@/app/predictions/actions"
 import { formatFull } from "@/lib/timezone";
 import { displayTeam } from "@/data/teams";
 import { isFinished, type Match } from "@/lib/api";
-import { POINTS, predictionPoints, type ScorePrediction } from "@/lib/predictions";
+import { POINTS, predictionPoints, qualifierBonus, type ScorePrediction } from "@/lib/predictions";
 
 export interface DbPrediction extends ScorePrediction {
   matchId: number;
@@ -51,7 +51,13 @@ export function PronosBoard({
 }) {
   const { timezone } = usePreferences();
   const [preds, setPreds] = useState<Map<number, ScorePrediction>>(
-    () => new Map(initialPredictions.map((p) => [p.matchId, { home: p.home, away: p.away }])),
+    () =>
+      new Map(
+        initialPredictions.map((p) => [
+          p.matchId,
+          { home: p.home, away: p.away, qualifier: p.qualifier ?? null },
+        ]),
+      ),
   );
   const [openRound, setOpenRound] = useState<string | null>(null); // tout fermé par défaut
   const [hideFinished, setHideFinished] = useState(false);
@@ -62,7 +68,7 @@ export function PronosBoard({
   const boostedIds = useMemo(() => new Set(boosts.values()), [boosts]);
 
   const handleSave = async (matchId: number, score: ScorePrediction) => {
-    const res = await savePrediction(matchId, score.home, score.away);
+    const res = await savePrediction(matchId, score.home, score.away, score.qualifier ?? null);
     if (!res?.error) setPreds((prev) => new Map(prev).set(matchId, score));
     return res;
   };
@@ -118,9 +124,11 @@ export function PronosBoard({
     return matches
       .filter((m) => isFinished(m.status) && preds.has(m.id))
       .map((m) => {
-        const base = predictionPoints(preds.get(m.id)!, m) ?? 0;
+        const pred = preds.get(m.id)!;
+        const base = predictionPoints(pred, m) ?? 0;
+        const bonus = qualifierBonus(pred, m);
         const boosted = boostedIds.has(m.id);
-        return { m, base, boosted, pts: boosted ? base * 2 : base };
+        return { m, base, bonus, boosted, pts: (boosted ? base * 2 : base) + bonus };
       })
       .sort((a, b) => +new Date(b.m.utcDate) - +new Date(a.m.utcDate));
   }, [matches, preds, boostedIds]);
@@ -256,7 +264,7 @@ export function PronosBoard({
       {evaluated.length > 0 && (
         <section className="space-y-2">
           <h2 className="font-bold">Récap des matchs terminés</h2>
-          {evaluated.map(({ m, base, boosted, pts }) => {
+          {evaluated.map(({ m, base, bonus, boosted, pts }) => {
             const home = displayTeam(m.homeTeam.id, m.homeTeam.name);
             const away = displayTeam(m.awayTeam.id, m.awayTeam.name);
             const pred = preds.get(m.id)!;
@@ -298,6 +306,7 @@ export function PronosBoard({
                 <span className={`shrink-0 font-bold tabular-nums ${tone}`}>
                   +{pts}
                   {boosted && base > 0 && <span className="text-emerald-600 dark:text-emerald-400"> (×2)</span>}
+                  {bonus > 0 && <span className="text-amber-600 dark:text-amber-400"> (+{bonus} qualifié)</span>}
                 </span>
               </Link>
             );
