@@ -23,7 +23,10 @@ export function WhatsNew({ userId, username }: { userId: string; username?: stri
     } catch {
       seen = [];
     }
-    const unseen = ANNOUNCEMENTS.filter((a) => !seen.includes(a.id));
+    // Disponibles = déjà parues (pas de date `from`, ou date atteinte) et non vues.
+    const now = Date.now();
+    const available = ANNOUNCEMENTS.filter((a) => !a.from || new Date(a.from).getTime() <= now);
+    const unseen = available.filter((a) => !seen.includes(a.id));
     if (unseen.length > 0) setQueue(unseen);
   }, [userId]);
 
@@ -34,7 +37,9 @@ export function WhatsNew({ userId, username }: { userId: string; username?: stri
       const key = `whatsnew:${userId}`;
       const raw = localStorage.getItem(key);
       const seen: string[] = raw ? JSON.parse(raw) : [];
-      const merged = Array.from(new Set([...seen, ...ANNOUNCEMENTS.map((a) => a.id)]));
+      // On ne marque « vues » que les slides réellement affichées (pas les
+      // futures annonces datées, qui doivent encore apparaître le jour venu).
+      const merged = Array.from(new Set([...seen, ...queue.map((q) => q.id)]));
       localStorage.setItem(key, JSON.stringify(merged));
     } catch {
       /* ignore */

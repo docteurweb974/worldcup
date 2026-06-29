@@ -12,9 +12,20 @@ export interface Announcement {
   description: string;
   href?: string; // si défini, le bouton de la slide y redirige
   cta?: string; // libellé du bouton de redirection
+  from?: string; // ISO : l'annonce n'apparaît qu'à partir de cette date/heure
 }
 
 export const ANNOUNCEMENTS: Announcement[] = [
+  {
+    id: "knockout-qualifier",
+    emoji: "🏆",
+    title: "8es de finale : choisis le qualifié !",
+    description:
+      "Sur un match à élimination, si tu pronostiques un match nul, désigne l'équipe qui se qualifie (prolongation ou tirs au but). Bon qualifié = +2 pts bonus, cumulés avec ton score !",
+    href: "/pronos",
+    cta: "Faire mes pronos",
+    from: "2026-07-04T00:00:00+02:00", // samedi 4 juillet (début des 8es)
+  },
   {
     id: "knockout-90min",
     emoji: "🕒",
