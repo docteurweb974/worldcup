@@ -5,9 +5,11 @@ import { Leaderboard } from "./Leaderboard";
 import { Podium } from "./Podium";
 import { Scorers } from "./Scorers";
 import { StandingsView } from "./StandingsView";
+import { KnockoutBracket } from "./KnockoutBracket";
 import { LivePointsRefresher } from "./LivePointsRefresher";
 import type { LeaderboardEntry } from "@/lib/leaderboard";
 import type { StandingGroup, Scorer } from "@/lib/api";
+import type { BracketRound } from "@/lib/bracket";
 
 type Tab = "pronos" | "cdm" | "buteurs";
 
@@ -22,13 +24,16 @@ export function ClassementTabs({
   currentUserId,
   standings,
   scorers,
+  bracket,
 }: {
   leaderboard: LeaderboardEntry[];
   currentUserId: string | null;
   standings: StandingGroup[];
   scorers: Scorer[];
+  bracket: BracketRound[];
 }) {
   const [tab, setTab] = useState<Tab>("pronos");
+  const [cdmView, setCdmView] = useState<"finales" | "groupes">("finales");
 
   return (
     <div className="mx-auto max-w-2xl animate-fade-in space-y-4 p-4">
@@ -67,8 +72,42 @@ export function ClassementTabs({
       )}
 
       {tab === "cdm" && (
-        <div key="cdm" className="animate-fade-in">
-          <StandingsView standings={standings} />
+        <div key="cdm" className="animate-fade-in space-y-4">
+          {/* Sous-onglets Phases finales / Groupes */}
+          <div className="flex justify-center">
+            <div className="inline-flex rounded-full bg-neutral-200 p-1 text-sm font-medium dark:bg-neutral-800">
+              {(
+                [
+                  ["finales", "Phases finales"],
+                  ["groupes", "Groupes"],
+                ] as const
+              ).map(([v, label]) => (
+                <button
+                  key={v}
+                  type="button"
+                  aria-pressed={cdmView === v}
+                  onClick={() => setCdmView(v)}
+                  className={`min-h-tap rounded-full px-4 transition-colors ${
+                    cdmView === v
+                      ? "bg-white text-neutral-900 shadow dark:bg-neutral-950 dark:text-white"
+                      : "text-neutral-600 dark:text-neutral-400"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {cdmView === "finales" ? (
+            <div key="finales" className="animate-fade-in">
+              <KnockoutBracket rounds={bracket} />
+            </div>
+          ) : (
+            <div key="groupes" className="animate-fade-in">
+              <StandingsView standings={standings} />
+            </div>
+          )}
         </div>
       )}
 

@@ -1,5 +1,6 @@
 import { getStandings, getScorers, type StandingGroup, type Scorer } from "@/lib/api";
 import { getLeaderboard } from "@/lib/leaderboard";
+import { getKnockoutBracket, type BracketRound } from "@/lib/bracket";
 import { createClient } from "@/lib/supabase/server";
 import { ClassementTabs } from "@/components/ClassementTabs";
 
@@ -11,6 +12,7 @@ export default async function ClassementsPage() {
 
   let standings: StandingGroup[] = [];
   let scorers: Scorer[] = [];
+  let bracket: BracketRound[] = [];
   const [leaderboard] = await Promise.all([
     getLeaderboard(),
     getStandings()
@@ -23,6 +25,11 @@ export default async function ClassementsPage() {
         scorers = s;
       })
       .catch(() => undefined),
+    getKnockoutBracket()
+      .then((b) => {
+        bracket = b;
+      })
+      .catch(() => undefined),
   ]);
 
   return (
@@ -31,6 +38,7 @@ export default async function ClassementsPage() {
       currentUserId={user?.id ?? null}
       standings={standings}
       scorers={scorers}
+      bracket={bracket}
     />
   );
 }
