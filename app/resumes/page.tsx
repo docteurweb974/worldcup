@@ -1,7 +1,7 @@
 import { getResilientMatches } from "@/lib/results";
 import { getAllVideos } from "@/lib/videos";
 import { displayTeam } from "@/data/teams";
-import { type Match } from "@/lib/api";
+import { matchScore, scoreSuffix, type Match } from "@/lib/api";
 import { ResumesGallery, type ResumeItem, type ResumeSection } from "@/components/ResumesGallery";
 
 export const dynamic = "force-dynamic";
@@ -34,7 +34,8 @@ export default async function ResumesPage() {
     if (!m) continue;
     const home = displayTeam(m.homeTeam.id, m.homeTeam.name);
     const away = displayTeam(m.awayTeam.id, m.awayTeam.name);
-    const ft = m.score.fullTime;
+    const ds = matchScore(m);
+    const sfx = scoreSuffix(ds);
     const item: ResumeItem = {
       matchId,
       youtubeId: v.youtube_id,
@@ -43,7 +44,7 @@ export default async function ResumesPage() {
       homeFr: home.nameFr,
       awayFlag: away.flag,
       awayFr: away.nameFr,
-      score: ft.home != null && ft.away != null ? `${ft.home} - ${ft.away}` : null,
+      score: ds.home != null && ds.away != null ? `${ds.home} - ${ds.away}${sfx ? ` ${sfx}` : ""}` : null,
       utcDate: m.utcDate,
     };
     const { key, label } = roundInfo(m);

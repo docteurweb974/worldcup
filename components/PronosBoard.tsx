@@ -9,7 +9,7 @@ import { BaremeCard } from "./BaremeCard";
 import { savePrediction, setBoost, clearBoost } from "@/app/predictions/actions";
 import { formatFull } from "@/lib/timezone";
 import { displayTeam } from "@/data/teams";
-import { isFinished, type Match } from "@/lib/api";
+import { isFinished, matchScore, scoreSuffix, type Match } from "@/lib/api";
 import { POINTS, predictionPoints, qualifierBonus, type ScorePrediction } from "@/lib/predictions";
 
 export interface DbPrediction extends ScorePrediction {
@@ -293,14 +293,21 @@ export function PronosBoard({
                   </p>
                   <p className="text-xs text-neutral-500">
                     {formatFull(m.utcDate, timezone)} · Pari : {pred.home}-{pred.away}
-                    {m.score.fullTime.home != null && (
-                      <>
-                        {" "}· Résultat : {m.score.fullTime.home}-{m.score.fullTime.away}
-                        {m.score.regularTime && (
-                          <> (90’ : {m.score.regularTime.home}-{m.score.regularTime.away})</>
-                        )}
-                      </>
-                    )}
+                    {m.score.fullTime.home != null &&
+                      (() => {
+                        const ds = matchScore(m);
+                        const suffix = scoreSuffix(ds);
+                        const reg = m.score.regularTime;
+                        const showReg =
+                          reg && reg.home != null && (reg.home !== ds.home || reg.away !== ds.away);
+                        return (
+                          <>
+                            {" "}· Résultat : {ds.home}-{ds.away}
+                            {suffix ? ` ${suffix}` : ""}
+                            {showReg && <> (90’ : {reg.home}-{reg.away})</>}
+                          </>
+                        );
+                      })()}
                   </p>
                 </div>
                 <span className={`shrink-0 font-bold tabular-nums ${tone}`}>

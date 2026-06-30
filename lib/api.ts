@@ -41,6 +41,8 @@ export interface Match {
     // Score à la fin du temps réglementaire (90'). Présent seulement quand le
     // match est allé en prolongation/TAB ; absent sinon (fullTime = score à 90').
     regularTime?: { home: number | null; away: number | null } | null;
+    // Score des tirs au but (si séance). ⚠️ fullTime INCLUT ces buts de TAB.
+    penalties?: { home: number | null; away: number | null } | null;
   };
 }
 
@@ -132,6 +134,50 @@ export async function getScorers(): Promise<Scorer[]> {
     goals: s.goals ?? 0,
     assists: s.assists ?? null,
   }));
+}
+
+/** Score « réel » d'un match pour l'affichage (hors tirs au but). */
+export interface DisplayScore {
+  home: number | null;
+  away: number | null;
+  penalties: { home: number; away: number } | null; // séance de TAB, si applicable
+  aet: boolean; // décidé en prolongation (sans TAB)
+}
+
+/**
+ * Calcule le score à AFFICHER, en retirant les tirs au but de `fullTime`
+ * (l'API les y ajoute). Pour une séance de TAB, le score affiché est celui de
+ * la fin de la prolongation (fullTime − TAB), assorti du résultat des TAB.
+ */
+export function matchScore(match: Match): DisplayScore {
+  const s = match.score;
+  const p = s.penalties;
+  const pens =
+    p && p.home != null && p.away != null ? { home: p.home, away: p.away } : null;
+
+  if (pens && s.fullTime.home != null && s.fullTime.away != null) {
+    return {
+      home: s.fullTime.home - pens.home,
+      away: s.fullTime.away - pens.away,
+      penalties: pens,
+      aet: false,
+    };
+  }
+
+  const reg = s.regularTime;
+  const aet =
+    !pens &&
+    reg?.home != null &&
+    reg.away != null &&
+    (s.fullTime.home !== reg.home || s.fullTime.away !== reg.away);
+  return { home: s.fullTime.home, away: s.fullTime.away, penalties: null, aet: !!aet };
+}
+
+/** Suffixe court : « a.p. », « t.a.b. 4-3 », ou "" (temps réglementaire). */
+export function scoreSuffix(d: DisplayScore): string {
+  if (d.penalties) return `t.a.b. ${d.penalties.home}-${d.penalties.away}`;
+  if (d.aet) return "a.p.";
+  return "";
 }
 
 /** Un match est-il en cours (score live à afficher) ? */

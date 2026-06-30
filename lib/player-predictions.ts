@@ -3,7 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getResilientMatches } from "@/lib/results";
 import { getUserBoosts } from "@/lib/boosts";
 import { predictionPoints, qualifierBonus, type Qualifier } from "@/lib/predictions";
-import { isFinished, type Match } from "@/lib/api";
+import { isFinished, matchScore, scoreSuffix, type Match } from "@/lib/api";
 import { displayTeam } from "@/data/teams";
 
 export interface PredItem {
@@ -72,13 +72,15 @@ export async function getFinishedPredictionsByRound(userId: string): Promise<Pre
     const isB = boosted.has(m.id);
     const home = displayTeam(m.homeTeam.id, m.homeTeam.name);
     const away = displayTeam(m.awayTeam.id, m.awayTeam.name);
+    const ds = matchScore(m);
+    const sfx = scoreSuffix(ds);
     const item: PredItem = {
       matchId: m.id,
       homeFlag: home.flag,
       homeFr: home.nameFr,
       awayFlag: away.flag,
       awayFr: away.nameFr,
-      result: `${m.score.fullTime.home}-${m.score.fullTime.away}`,
+      result: `${ds.home}-${ds.away}${sfx ? ` ${sfx}` : ""}`,
       pred: `${p.home}-${p.away}`,
       pts: (isB ? base * 2 : base) + bonus,
       boosted: isB,

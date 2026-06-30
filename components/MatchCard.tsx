@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePreferences } from "./PreferencesProvider";
 import { formatTime } from "@/lib/timezone";
 import { displayTeam } from "@/data/teams";
-import { formatGroup, isFinished, isLive, type Match, type MatchTeam } from "@/lib/api";
+import { formatGroup, isFinished, isLive, matchScore, scoreSuffix, type Match, type MatchTeam } from "@/lib/api";
 
 function TeamSide({ team, align }: { team: MatchTeam; align: "left" | "right" }) {
   const { flag, nameFr } = displayTeam(team.id, team.name);
@@ -26,8 +26,9 @@ export function MatchCard({ match, predicted = false }: { match: Match; predicte
   const { timezone } = usePreferences();
   const live = isLive(match.status);
   const finished = isFinished(match.status);
-  const { home, away } = match.score.fullTime;
-  const showScore = (live || finished) && home != null && away != null;
+  const ds = matchScore(match);
+  const suffix = scoreSuffix(ds);
+  const showScore = (live || finished) && ds.home != null && ds.away != null;
 
   const groupLabel = match.group
     ? formatGroup(match.group)
@@ -60,8 +61,13 @@ export function MatchCard({ match, predicted = false }: { match: Match; predicte
         <TeamSide team={match.homeTeam} align="right" />
         <div className="min-w-16 text-center">
           {showScore ? (
-            <span className="text-xl font-bold tabular-nums">
-              {home} <span className="text-neutral-400">-</span> {away}
+            <span className="inline-flex flex-col items-center leading-tight">
+              <span className="text-xl font-bold tabular-nums">
+                {ds.home} <span className="text-neutral-400">-</span> {ds.away}
+              </span>
+              {suffix && (
+                <span className="text-[10px] font-medium uppercase text-neutral-400">{suffix}</span>
+              )}
             </span>
           ) : (
             <span className="text-base font-semibold tabular-nums text-accent">

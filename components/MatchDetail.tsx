@@ -12,8 +12,8 @@ import { savePrediction } from "@/app/predictions/actions";
 import { formatFull } from "@/lib/timezone";
 import { calendarFilename } from "@/lib/ics";
 import { displayTeam } from "@/data/teams";
-import { formatGroup, isFinished, isLive, type Match } from "@/lib/api";
-import { POINTS, predictionPoints, type ScorePrediction } from "@/lib/predictions";
+import { formatGroup, isFinished, isLive, matchScore, scoreSuffix, type Match } from "@/lib/api";
+import { POINTS, predictionPoints, qualifierBonus, type ScorePrediction } from "@/lib/predictions";
 
 export function MatchDetail({
   match,
@@ -34,8 +34,9 @@ export function MatchDetail({
   const live = isLive(match.status);
   const finished = isFinished(match.status);
   const canPredict = match.status === "SCHEDULED" || match.status === "TIMED";
-  const { home: hScore, away: aScore } = match.score.fullTime;
-  const showScore = (live || finished) && hScore != null && aScore != null;
+  const ds = matchScore(match);
+  const suffix = scoreSuffix(ds);
+  const showScore = (live || finished) && ds.home != null && ds.away != null;
 
   const [score, setScore] = useState<ScorePrediction>(prediction ?? { home: 0, away: 0 });
   const [savedScore, setSavedScore] = useState<ScorePrediction | null>(prediction);
@@ -74,9 +75,14 @@ export function MatchDetail({
           </div>
           <div className="text-center">
             {showScore ? (
-              <span className="text-3xl font-bold tabular-nums">
-                {hScore} <span className="text-neutral-400">-</span> {aScore}
-              </span>
+              <>
+                <span className="text-3xl font-bold tabular-nums">
+                  {ds.home} <span className="text-neutral-400">-</span> {ds.away}
+                </span>
+                {suffix && (
+                  <p className="text-xs font-medium uppercase text-neutral-400">{suffix}</p>
+                )}
+              </>
             ) : (
               <span className="text-neutral-400">vs</span>
             )}
@@ -167,15 +173,17 @@ function PredictionResult({
   if (!prediction) {
     return <p className="text-sm text-neutral-500">Tu n&apos;as pas parié sur ce match.</p>;
   }
-  const pts = predictionPoints(prediction, match) ?? 0;
+  const base = predictionPoints(prediction, match) ?? 0;
+  const bonus = qualifierBonus(prediction, match);
+  const pts = base + bonus;
   const tone =
-    pts === POINTS.exact
+    base === POINTS.exact
       ? "text-green-600 dark:text-green-400"
-      : pts === POINTS.outcome
+      : base === POINTS.outcome
         ? "text-amber-600 dark:text-amber-400"
         : "text-red-600 dark:text-red-400";
   const message =
-    pts === POINTS.exact ? "Score exact !" : pts === POINTS.outcome ? "Bon résultat" : "Raté";
+    base === POINTS.exact ? "Score exact !" : base === POINTS.outcome ? "Bon résultat" : "Raté";
   return (
     <div className="space-y-1 text-sm">
       <p className={`text-lg font-bold ${tone}`}>
@@ -183,6 +191,9 @@ function PredictionResult({
       </p>
       <p className="text-neutral-500">
         Ton pronostic : {prediction.home} - {prediction.away}
+        {bonus > 0 && (
+          <span className="font-semibold text-amber-600 dark:text-amber-400"> · ✓ qualifié +2</span>
+        )}
       </p>
     </div>
   );

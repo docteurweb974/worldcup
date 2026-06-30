@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { ScorePicker } from "./ScorePicker";
 import { displayTeam } from "@/data/teams";
-import { formatGroup, isFinished, type Match } from "@/lib/api";
+import { formatGroup, isFinished, matchScore, scoreSuffix, type Match } from "@/lib/api";
 import { formatFull, type TimezoneChoice } from "@/lib/timezone";
 import {
   POINTS,
@@ -68,8 +68,9 @@ export function InlineMatchCard({
 
   // Match terminé : carte verrouillée affichant le résultat + ton pari + points.
   if (isFinished(match.status)) {
-    const ft = match.score.fullTime;
-    const hasResult = ft.home != null && ft.away != null;
+    const ds = matchScore(match);
+    const suffix = scoreSuffix(ds);
+    const hasResult = ds.home != null && ds.away != null;
     const base = prediction && hasResult ? predictionPoints(prediction, match) ?? 0 : null;
     const bonus = prediction ? qualifierBonus(prediction, match) : 0;
     const pts = base != null ? (isBoost ? base * 2 : base) + bonus : null;
@@ -95,9 +96,14 @@ export function InlineMatchCard({
         </div>
         <div className="flex items-center justify-between gap-2">
           <p className="font-medium">
-            {home.flag} {home.nameFr} <span className="tabular-nums">
-              {hasResult ? `${ft.home} - ${ft.away}` : "—"}
-            </span> {away.nameFr} {away.flag}
+            {home.flag} {home.nameFr}{" "}
+            <span className="tabular-nums">{hasResult ? `${ds.home} - ${ds.away}` : "—"}</span>{" "}
+            {away.nameFr} {away.flag}
+            {suffix && (
+              <span className="ml-1 text-[10px] font-medium uppercase text-neutral-400">
+                {suffix}
+              </span>
+            )}
           </p>
           {pts != null && <span className={`shrink-0 font-bold tabular-nums ${tone}`}>+{pts}</span>}
         </div>

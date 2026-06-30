@@ -29,6 +29,8 @@ export async function getResilientMatches(): Promise<Match[]> {
     away: number;
     reg_home: number | null;
     reg_away: number | null;
+    pen_home: number | null;
+    pen_away: number | null;
   };
   const db = admin as unknown as {
     from: (table: string) => {
@@ -40,11 +42,18 @@ export async function getResilientMatches(): Promise<Match[]> {
   // Résultats déjà mémorisés.
   const { data: stored } = await db
     .from("match_results")
-    .select("match_id, home, away, reg_home, reg_away");
+    .select("match_id, home, away, reg_home, reg_away, pen_home, pen_away");
   const known = new Map<number, KnownResult>(
     (stored ?? []).map((r) => [
       r.match_id,
-      { home: r.home, away: r.away, regHome: r.reg_home, regAway: r.reg_away },
+      {
+        home: r.home,
+        away: r.away,
+        regHome: r.reg_home,
+        regAway: r.reg_away,
+        penHome: r.pen_home,
+        penAway: r.pen_away,
+      },
     ]),
   );
 
@@ -62,6 +71,10 @@ export async function getResilientMatches(): Promise<Match[]> {
     const reg = m.score.regularTime;
     const regHome = reg?.home ?? h;
     const regAway = reg?.away ?? a;
+    // Tirs au but (si séance) : pour afficher le vrai score (fullTime − TAB).
+    const pen = m.score.penalties;
+    const penHome = pen?.home ?? null;
+    const penAway = pen?.away ?? null;
     const elapsed = now - new Date(m.utcDate).getTime();
     if (
       isFinished(m.status) &&
@@ -70,8 +83,16 @@ export async function getResilientMatches(): Promise<Match[]> {
       a != null &&
       !known.has(m.id)
     ) {
-      known.set(m.id, { home: h, away: a, regHome, regAway });
-      toStore.push({ match_id: m.id, home: h, away: a, reg_home: regHome, reg_away: regAway });
+      known.set(m.id, { home: h, away: a, regHome, regAway, penHome, penAway });
+      toStore.push({
+        match_id: m.id,
+        home: h,
+        away: a,
+        reg_home: regHome,
+        reg_away: regAway,
+        pen_home: penHome,
+        pen_away: penAway,
+      });
     }
   }
   if (toStore.length > 0) {
@@ -86,8 +107,15 @@ export async function getResilientMatch(id: number): Promise<Match | undefined> 
   return (await getResilientMatches()).find((m) => m.id === id);
 }
 
-/** Score mémorisé : fullTime (home/away) + score à 90' (regHome/regAway, peut être null). */
-type KnownResult = { home: number; away: number; regHome: number | null; regAway: number | null };
+/** Score mémorisé : fullTime + score à 90' + TAB éventuels (peuvent être null). */
+type KnownResult = {
+  home: number;
+  away: number;
+  regHome: number | null;
+  regAway: number | null;
+  penHome: number | null;
+  penAway: number | null;
+};
 
 /** Applique les scores mémorisés au flux live (force le statut « terminé »). */
 function overlay(matches: Match[], known: Map<number, KnownResult>): Match[] {
@@ -102,6 +130,10 @@ function overlay(matches: Match[], known: Map<number, KnownResult>): Match[] {
     // Restaure aussi le score à 90' mémorisé (résilience du scoring phases finales).
     if (r.regHome != null && r.regAway != null) {
       score.regularTime = { home: r.regHome, away: r.regAway };
+    }
+    // …et les TAB mémorisés (résilience de l'affichage du vrai score).
+    if (r.penHome != null && r.penAway != null) {
+      score.penalties = { home: r.penHome, away: r.penAway };
     }
     return {
       ...m,
