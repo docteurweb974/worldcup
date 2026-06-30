@@ -70,7 +70,8 @@ export async function getKnockoutBracket(): Promise<BracketRound[]> {
     label,
     matches: matches
       .filter((m) => m.stage === key)
-      .sort((a, b) => +new Date(a.utcDate) - +new Date(b.utcDate))
+      // Tri par id = ordre officiel du tableau (les dates mélangent les affiches).
+      .sort((a, b) => a.id - b.id)
       .map((m) => {
         const fin = scored(m);
         const ds = fin ? matchScore(m) : null;
