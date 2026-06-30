@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getResilientMatches } from "@/lib/results";
 import { getAllBoosts } from "@/lib/boosts";
@@ -26,7 +27,7 @@ export interface LeaderboardEntry {
  * reste de la page : l'appel lourd à football-data reste mis en cache 30 s via
  * getMatches ; le reste n'est qu'une agrégation de quelques requêtes Supabase.
  */
-export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
+export const getLeaderboard = cache(async (): Promise<LeaderboardEntry[]> => {
   let admin: ReturnType<typeof createAdminClient>;
   try {
     admin = createAdminClient();
@@ -91,4 +92,4 @@ export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
   );
 
   return entries.map((e, i) => ({ ...e, rank: i + 1 }));
-}
+});

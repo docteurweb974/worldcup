@@ -98,14 +98,16 @@ export async function getPlayerStats(userId: string): Promise<PlayerStats> {
   }
 
   const leaderboard = await getLeaderboard();
-  const rank = leaderboard.find((e) => e.userId === userId)?.rank ?? 0;
+  const me = leaderboard.find((e) => e.userId === userId);
+  const rank = me?.rank ?? 0;
 
   return {
     predictions: predList.length,
     exact,
     good,
     played: finished.length,
-    points,
+    // Total identique au classement (inclut le bonus Survivor) ; repli sur le calcul local.
+    points: me?.points ?? points,
     streak,
     fullMatchdays,
     rank,
