@@ -295,29 +295,39 @@ export function PronosBoard({
                   {(() => {
                     const ds = matchScore(m);
                     const reg = m.score.regularTime;
-                    const chipBase = "rounded-full px-2.5 py-1 font-medium";
+                    const showReg = (ds.aet || ds.penalties) && reg?.home != null;
                     return (
-                      <>
-                        <div className="mt-1.5 flex flex-wrap gap-2 text-xs">
-                          <span className={`${chipBase} border border-accent/50 text-accent`}>
-                            🎯 Pari {pred.home}-{pred.away}
-                          </span>
-                          {m.score.fullTime.home != null && (
-                            <span
-                              className={`${chipBase} border border-neutral-300 text-neutral-600 dark:border-neutral-600 dark:text-neutral-300`}
+                      <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs">
+                        <span className="rounded-full border border-accent/50 px-2.5 py-1 font-medium text-accent">
+                          🎯 Pari {pred.home}-{pred.away}
+                        </span>
+                        {showReg && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-1 font-semibold text-amber-700 dark:bg-amber-400/15 dark:text-amber-300">
+                            <svg
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth={2}
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              className="h-3 w-3"
+                              aria-hidden="true"
                             >
-                              Résultat : {ds.home}-{ds.away}
-                              {ds.penalties && ` · TAB ${ds.penalties.home}-${ds.penalties.away}`}
-                              {ds.aet && " a.p."}
-                            </span>
-                          )}
-                        </div>
-                        {reg?.home != null && (
-                          <p className="mt-1 text-xs text-neutral-400">
-                            Points sur le score à 90’ : {reg.home}-{reg.away}
-                          </p>
+                              <circle cx="12" cy="13" r="8" />
+                              <path d="M12 13V9" />
+                              <path d="M9 2h6" />
+                            </svg>
+                            90 min : {reg!.home}-{reg!.away}
+                          </span>
                         )}
-                      </>
+                        {m.score.fullTime.home != null && (
+                          <span className="text-neutral-500">
+                            Résultat : {ds.home}-{ds.away}
+                            {ds.penalties && ` · TAB ${ds.penalties.home}-${ds.penalties.away}`}
+                            {ds.aet && " a.p."}
+                          </span>
+                        )}
+                      </div>
                     );
                   })()}
                 </div>

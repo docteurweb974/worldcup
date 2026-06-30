@@ -3,7 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getResilientMatches } from "@/lib/results";
 import { getUserBoosts } from "@/lib/boosts";
 import { predictionPoints, qualifierBonus, type Qualifier } from "@/lib/predictions";
-import { isFinished, matchScore, scoreSuffix, type Match } from "@/lib/api";
+import { isFinished, matchScore, type Match } from "@/lib/api";
 import { displayTeam } from "@/data/teams";
 
 export interface PredItem {
@@ -12,7 +12,10 @@ export interface PredItem {
   homeFr: string;
   awayFlag: string;
   awayFr: string;
-  result: string;
+  result: string; // score final à 120' (propre, sans TAB ni a.p.)
+  tab: string | null; // tirs au but « 3-4 », sinon null
+  aet: boolean; // décidé en prolongation (sans TAB)
+  reg: string | null; // score à 90' « 1-1 » si le match est allé au-delà
   pred: string;
   pts: number;
   boosted: boolean;
@@ -73,14 +76,17 @@ export async function getFinishedPredictionsByRound(userId: string): Promise<Pre
     const home = displayTeam(m.homeTeam.id, m.homeTeam.name);
     const away = displayTeam(m.awayTeam.id, m.awayTeam.name);
     const ds = matchScore(m);
-    const sfx = scoreSuffix(ds);
+    const reg = m.score.regularTime;
     const item: PredItem = {
       matchId: m.id,
       homeFlag: home.flag,
       homeFr: home.nameFr,
       awayFlag: away.flag,
       awayFr: away.nameFr,
-      result: `${ds.home}-${ds.away}${sfx ? ` ${sfx}` : ""}`,
+      result: `${ds.home}-${ds.away}`,
+      tab: ds.penalties ? `${ds.penalties.home}-${ds.penalties.away}` : null,
+      aet: ds.aet,
+      reg: reg?.home != null ? `${reg.home}-${reg.away}` : null,
       pred: `${p.home}-${p.away}`,
       pts: (isB ? base * 2 : base) + bonus,
       boosted: isB,

@@ -26,14 +26,43 @@ function PredRow({ it }: { it: PredItem }) {
         <p className="font-medium">
           {it.homeFlag} {it.homeFr} <span className="tabular-nums">{it.result}</span> {it.awayFr}{" "}
           {it.awayFlag}
+          {it.tab && (
+            <span className="ml-1.5 text-xs font-medium uppercase text-neutral-400">
+              t.a.b. {it.tab}
+            </span>
+          )}
+          {it.aet && (
+            <span className="ml-1.5 text-xs font-medium uppercase text-neutral-400">a.p.</span>
+          )}
           {it.boosted && (
             <span className="ml-1 rounded-full bg-emerald-500 px-1.5 py-0.5 text-xs font-bold text-white">
               ⚡ ×2
             </span>
           )}
         </p>
-        <p className="mt-0.5 text-xs text-neutral-500">
-          Pronostic : <span className="tabular-nums">{it.pred}</span>
+        <p className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-neutral-500">
+          <span>
+            Pronostic : <span className="tabular-nums">{it.pred}</span>
+          </span>
+          {(it.aet || it.tab) && it.reg && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700 dark:bg-amber-400/15 dark:text-amber-300">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-3 w-3"
+                aria-hidden="true"
+              >
+                <circle cx="12" cy="13" r="8" />
+                <path d="M12 13V9" />
+                <path d="M9 2h6" />
+              </svg>
+              90 min : {it.reg}
+            </span>
+          )}
         </p>
       </div>
       <span className={`shrink-0 font-bold tabular-nums ${tone}`}>+{it.pts}</span>
