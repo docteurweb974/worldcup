@@ -48,6 +48,11 @@ function Spot({
         <span className="text-xs text-white/55">
           {entry.good} bons · {entry.exact} exacts
         </span>
+        {entry.survivorBonus > 0 && (
+          <span className="mt-1 rounded-full bg-amber-400/20 px-1.5 py-0.5 text-[10px] font-bold text-amber-200">
+            🏆 Survivor +{entry.survivorBonus} pts
+          </span>
+        )}
       </Link>
       {/* Marche du podium */}
       <div

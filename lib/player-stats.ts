@@ -3,8 +3,11 @@ import { isFinished, roundKey } from "@/lib/api";
 import { getResilientMatches } from "@/lib/results";
 import { getUserBoosts } from "@/lib/boosts";
 import { getLeaderboard } from "@/lib/leaderboard";
+import { getSurvivorWinners } from "@/lib/survivor";
 import { POINTS, predictionPoints, qualifierBonus, type Qualifier } from "@/lib/predictions";
 import type { PlayerStats } from "@/lib/badges";
+
+const SURVIVOR_BONUS = 10;
 
 const EMPTY: PlayerStats = {
   predictions: 0,
@@ -18,6 +21,7 @@ const EMPTY: PlayerStats = {
   hasFavorite: false,
   knockoutExact: false,
   cleanSheetExact: false,
+  breakdown: { pronos: 0, boost: 0, qualifier: 0, survivor: 0 },
 };
 
 /** Calcule les statistiques d'un joueur (pour ses badges et son palmarès). */
@@ -57,12 +61,20 @@ export async function getPlayerStats(userId: string): Promise<PlayerStats> {
   let run = 0;
   let knockoutExact = false;
   let cleanSheetExact = false;
+  // Décomposition.
+  let bdPronos = 0;
+  let bdBoost = 0;
+  let bdQualifier = 0;
   for (const { p, m } of finished) {
     const qualifier = (p as { qualifier?: Qualifier | null }).qualifier ?? null;
     const base = predictionPoints({ home: p.home, away: p.away }, m!) ?? 0;
     const bonus = qualifierBonus({ home: p.home, away: p.away, qualifier }, m!);
-    const pts = (boosted.has(m!.id) ? base * 2 : base) + bonus;
+    const isBoost = boosted.has(m!.id);
+    const pts = (isBoost ? base * 2 : base) + bonus;
     points += pts;
+    bdPronos += base;
+    if (isBoost) bdBoost += base; // l'extra apporté par le ×2
+    bdQualifier += bonus;
     if (base === POINTS.exact) {
       exact += 1;
       if (m!.stage !== "GROUP_STAGE") knockoutExact = true;
@@ -97,9 +109,10 @@ export async function getPlayerStats(userId: string): Promise<PlayerStats> {
     if (total > 0 && (predByRound.get(k) ?? 0) >= total) fullMatchdays += 1;
   }
 
-  const leaderboard = await getLeaderboard();
+  const [leaderboard, survivorWinners] = await Promise.all([getLeaderboard(), getSurvivorWinners()]);
   const me = leaderboard.find((e) => e.userId === userId);
   const rank = me?.rank ?? 0;
+  const bdSurvivor = survivorWinners.has(userId) ? SURVIVOR_BONUS : 0;
 
   return {
     predictions: predList.length,
@@ -107,10 +120,11 @@ export async function getPlayerStats(userId: string): Promise<PlayerStats> {
     good,
     played: finished.length,
     // Total identique au classement (inclut le bonus Survivor) ; repli sur le calcul local.
-    points: me?.points ?? points,
+    points: me?.points ?? points + bdSurvivor,
     streak,
     fullMatchdays,
     rank,
+    breakdown: { pronos: bdPronos, boost: bdBoost, qualifier: bdQualifier, survivor: bdSurvivor },
     hasFavorite: !!profile?.favorite_team,
     knockoutExact,
     cleanSheetExact,

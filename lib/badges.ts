@@ -12,6 +12,13 @@ export interface PlayerStats {
   hasFavorite: boolean; // équipe favorite définie
   knockoutExact: boolean; // un score exact en phase finale
   cleanSheetExact: boolean; // un score exact sur un match à clean sheet
+  // Décomposition du total de points (somme = points).
+  breakdown: {
+    pronos: number; // points de base des pronos (hors ×2)
+    boost: number; // points supplémentaires du Boost ×2
+    qualifier: number; // bonus « qualifié » (8es+)
+    survivor: number; // bonus Survivor (+10)
+  };
 }
 
 export interface Badge {

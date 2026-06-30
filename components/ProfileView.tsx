@@ -104,6 +104,15 @@ export function ProfileView({
                 <Stat icon="🎯" value={stats.played} label="Pronos" />
                 <Stat icon="✅" value={stats.good} label="Bons pronos" />
                 <Stat icon="💥" value={stats.exact} label="Scores exacts" />
+                {stats.breakdown.survivor > 0 && (
+                  <div className="flex items-center gap-2">
+                    <span aria-hidden="true">🔥</span>
+                    <span className="text-neutral-500">
+                      Vainqueur Survivor{" "}
+                      <span className="font-bold text-accent">+{stats.breakdown.survivor}pts</span>
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 

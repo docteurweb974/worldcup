@@ -53,6 +53,14 @@ export function Leaderboard({
                   {e.username}
                   {me && " (toi)"}
                 </span>
+                {e.survivorBonus > 0 && (
+                  <span
+                    title={`Bonus Survivor : +${e.survivorBonus} pts`}
+                    className="shrink-0 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-400/15 dark:text-amber-300"
+                  >
+                    🏆 Survivor +{e.survivorBonus} pts
+                  </span>
+                )}
               </div>
               <div className="shrink-0 text-right">
                 <span className="font-bold tabular-nums text-accent">{e.points} pts</span>

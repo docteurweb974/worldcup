@@ -16,6 +16,7 @@ export interface LeaderboardEntry {
   played: number;
   rank: number;
   favoriteTla: string | null;
+  survivorBonus: number; // bonus Survivor inclus dans les points (0 si aucun)
 }
 
 /**
@@ -83,6 +84,7 @@ export const getLeaderboard = cache(async (): Promise<LeaderboardEntry[]> => {
       good: a.good,
       played: a.played,
       favoriteTla: (prof as { favorite_team?: string | null }).favorite_team ?? null,
+      survivorBonus: bonus,
     };
   });
 
