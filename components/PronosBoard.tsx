@@ -293,18 +293,17 @@ export function PronosBoard({
                   </p>
                   <p className="text-xs text-neutral-500">
                     {formatFull(m.utcDate, timezone)} · Pari : {pred.home}-{pred.away}
+                    {m.score.regularTime?.home != null && (
+                      <> (90’ : {m.score.regularTime.home}-{m.score.regularTime.away})</>
+                    )}
                     {m.score.fullTime.home != null &&
                       (() => {
                         const ds = matchScore(m);
                         const suffix = scoreSuffix(ds);
-                        const reg = m.score.regularTime;
-                        const showReg =
-                          reg && reg.home != null && (reg.home !== ds.home || reg.away !== ds.away);
                         return (
                           <>
                             {" "}· Résultat : {ds.home}-{ds.away}
                             {suffix ? ` ${suffix}` : ""}
-                            {showReg && <> (90’ : {reg.home}-{reg.away})</>}
                           </>
                         );
                       })()}

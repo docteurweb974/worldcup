@@ -41,6 +41,8 @@ export interface Match {
     // Score à la fin du temps réglementaire (90'). Présent seulement quand le
     // match est allé en prolongation/TAB ; absent sinon (fullTime = score à 90').
     regularTime?: { home: number | null; away: number | null } | null;
+    // Buts marqués en prolongation (si jouée). fullTime = reg + ET + TAB.
+    extraTime?: { home: number | null; away: number | null } | null;
     // Score des tirs au but (si séance). ⚠️ fullTime INCLUT ces buts de TAB.
     penalties?: { home: number | null; away: number | null } | null;
   };

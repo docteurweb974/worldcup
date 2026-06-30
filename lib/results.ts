@@ -75,12 +75,21 @@ export async function getResilientMatches(): Promise<Match[]> {
     const pen = m.score.penalties;
     const penHome = pen?.home ?? null;
     const penAway = pen?.away ?? null;
+    // Cohérence : pour un match allé au-delà de 90', fullTime DOIT valoir
+    // reg + prolongation + TAB. Sinon on est en pleine séance (données partielles)
+    // → on ne fige PAS (sinon on garde un score faux, ex. capture mi-TAB).
+    const et = m.score.extraTime;
+    const consistent =
+      reg == null ||
+      (h === (reg.home ?? 0) + (et?.home ?? 0) + (pen?.home ?? 0) &&
+        a === (reg.away ?? 0) + (et?.away ?? 0) + (pen?.away ?? 0));
     const elapsed = now - new Date(m.utcDate).getTime();
     if (
       isFinished(m.status) &&
       elapsed >= MIN_ELAPSED_MS &&
       h != null &&
       a != null &&
+      consistent &&
       !known.has(m.id)
     ) {
       known.set(m.id, { home: h, away: a, regHome, regAway, penHome, penAway });
