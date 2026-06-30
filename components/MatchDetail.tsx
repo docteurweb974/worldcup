@@ -82,6 +82,25 @@ export function MatchDetail({
                 {suffix && (
                   <p className="text-xs font-medium uppercase text-neutral-400">{suffix}</p>
                 )}
+                {(ds.aet || ds.penalties) && match.score.regularTime?.home != null && (
+                  <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700 dark:bg-amber-400/15 dark:text-amber-300">
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="h-3 w-3"
+                      aria-hidden="true"
+                    >
+                      <circle cx="12" cy="13" r="8" />
+                      <path d="M12 13V9" />
+                      <path d="M9 2h6" />
+                    </svg>
+                    90 min : {match.score.regularTime.home}-{match.score.regularTime.away}
+                  </span>
+                )}
               </>
             ) : (
               <span className="text-neutral-400">vs</span>
