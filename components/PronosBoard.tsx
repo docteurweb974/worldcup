@@ -9,7 +9,7 @@ import { BaremeCard } from "./BaremeCard";
 import { savePrediction, setBoost, clearBoost } from "@/app/predictions/actions";
 import { formatFull } from "@/lib/timezone";
 import { displayTeam } from "@/data/teams";
-import { isFinished, matchScore, scoreSuffix, type Match } from "@/lib/api";
+import { isFinished, matchScore, type Match } from "@/lib/api";
 import { POINTS, predictionPoints, qualifierBonus, type ScorePrediction } from "@/lib/predictions";
 
 export interface DbPrediction extends ScorePrediction {
@@ -291,23 +291,35 @@ export function PronosBoard({
                       </span>
                     )}
                   </p>
-                  <p className="text-xs text-neutral-500">
-                    {formatFull(m.utcDate, timezone)} · Pari : {pred.home}-{pred.away}
-                    {m.score.regularTime?.home != null && (
-                      <> (90’ : {m.score.regularTime.home}-{m.score.regularTime.away})</>
-                    )}
-                    {m.score.fullTime.home != null &&
-                      (() => {
-                        const ds = matchScore(m);
-                        const suffix = scoreSuffix(ds);
-                        return (
-                          <>
-                            {" "}· Résultat : {ds.home}-{ds.away}
-                            {suffix ? ` ${suffix}` : ""}
-                          </>
-                        );
-                      })()}
-                  </p>
+                  <p className="text-xs text-neutral-400">{formatFull(m.utcDate, timezone)}</p>
+                  {(() => {
+                    const ds = matchScore(m);
+                    const reg = m.score.regularTime;
+                    const chipBase = "rounded-full px-2.5 py-1 font-medium";
+                    return (
+                      <>
+                        <div className="mt-1.5 flex flex-wrap gap-2 text-xs">
+                          <span className={`${chipBase} border border-accent/50 text-accent`}>
+                            🎯 Pari {pred.home}-{pred.away}
+                          </span>
+                          {m.score.fullTime.home != null && (
+                            <span
+                              className={`${chipBase} border border-neutral-300 text-neutral-600 dark:border-neutral-600 dark:text-neutral-300`}
+                            >
+                              Résultat : {ds.home}-{ds.away}
+                              {ds.penalties && ` · TAB ${ds.penalties.home}-${ds.penalties.away}`}
+                              {ds.aet && " a.p."}
+                            </span>
+                          )}
+                        </div>
+                        {reg?.home != null && (
+                          <p className="mt-1 text-xs text-neutral-400">
+                            Points sur le score à 90’ : {reg.home}-{reg.away}
+                          </p>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
                 <span className={`shrink-0 font-bold tabular-nums ${tone}`}>
                   +{pts}
