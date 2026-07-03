@@ -51,9 +51,10 @@ export async function savePrediction(
   );
   if (error) return { error: "Enregistrement impossible." };
 
+  // On ne revalide QUE la page du match (route distincte). Pas /pronos ni le
+  // layout : la mise à jour est optimiste côté client, un prono ne change aucun
+  // point (match à venir), et revalider /pronos réinitialiserait l'accordéon.
   revalidatePath(`/match/${matchId}`);
-  revalidatePath("/pronos");
-  revalidatePath("/", "layout");
   return { ok: true };
 }
 

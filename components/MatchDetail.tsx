@@ -14,6 +14,7 @@ import { calendarFilename } from "@/lib/ics";
 import { displayTeam } from "@/data/teams";
 import { formatGroup, isFinished, isLive, matchScore, scoreSuffix, type Match } from "@/lib/api";
 import { POINTS, predictionPoints, qualifierBonus, type ScorePrediction } from "@/lib/predictions";
+import { ResultHero, stageLabel } from "./ResultHero";
 
 export function MatchDetail({
   match,
@@ -46,6 +47,17 @@ export function MatchDetail({
   const isDirty =
     !savedScore || savedScore.home !== score.home || savedScore.away !== score.away;
 
+  // Résultat du pronostic (affiché dans la carte, pour un match terminé).
+  const predResult =
+    finished && prediction
+      ? (() => {
+          const base = predictionPoints(prediction, match) ?? 0;
+          const bonus = qualifierBonus(prediction, match);
+          return { home: prediction.home, away: prediction.away, base, points: base + bonus };
+        })()
+      : null;
+  const reg = match.score.regularTime;
+
   const onSave = async () => {
     setSaving(true);
     setError(null);
@@ -59,12 +71,29 @@ export function MatchDetail({
   };
 
   return (
-    <div className="mx-auto max-w-xl animate-fade-in space-y-6 p-4">
-      <Link href="/calendrier" className="text-sm text-neutral-500 hover:text-accent">
-        ← Calendrier
-      </Link>
+    <div className="animate-fade-in">
+      {finished && ds.home != null && ds.away != null && (
+        <ResultHero
+          stadium="/stadium-1.jpg"
+          home={{ flag: home.flag, nameFr: home.nameFr, tla: match.homeTeam.tla }}
+          away={{ flag: away.flag, nameFr: away.nameFr, tla: match.awayTeam.tla }}
+          score={{ home: ds.home, away: ds.away }}
+          pens={ds.penalties}
+          aet={ds.aet}
+          reg={reg?.home != null ? { home: reg.home, away: reg.away ?? 0 } : null}
+          stage={stageLabel(match.stage, match.group)}
+          date={formatFull(match.utcDate, timezone)}
+          prediction={predResult}
+        />
+      )}
 
-      <header className="space-y-3 text-center">
+      <div className="mx-auto max-w-xl space-y-6 p-4">
+        {!finished && (
+          <>
+            <Link href="/calendrier" className="text-sm text-neutral-500 hover:text-accent">
+              ← Calendrier
+            </Link>
+            <header className="space-y-3 text-center">
         <p className="text-xs uppercase tracking-wide text-neutral-500">
           {match.group ? formatGroup(match.group) : match.stage.replaceAll("_", " ")}
         </p>
@@ -114,9 +143,12 @@ export function MatchDetail({
             <span className="text-sm font-semibold">{away.nameFr}</span>
           </div>
         </div>
-        <p className="text-sm text-neutral-500">{formatFull(match.utcDate, timezone)}</p>
-      </header>
+            <p className="text-sm text-neutral-500">{formatFull(match.utcDate, timezone)}</p>
+            </header>
+          </>
+        )}
 
+      {!finished && (
       <section className="rounded-2xl border border-neutral-200 p-4 dark:border-neutral-800">
         <h2 className="mb-3 font-bold">Mon pronostic 🎯</h2>
 
@@ -154,8 +186,6 @@ export function MatchDetail({
               Score exact : {POINTS.exact} pts · bon résultat : {POINTS.outcome} pts.
             </p>
           </div>
-        ) : finished ? (
-          <PredictionResult match={match} prediction={savedScore} />
         ) : (
           <p className="text-sm text-neutral-500">
             Match en cours — pronostic clôturé.
@@ -163,9 +193,16 @@ export function MatchDetail({
           </p>
         )}
       </section>
+      )}
 
       {community && community.total > 0 && (
-        <CommunityBar stats={community} homeName={home.nameFr} awayName={away.nameFr} />
+        <CommunityBar
+          stats={community}
+          homeName={home.nameFr}
+          awayName={away.nameFr}
+          homeFlag={home.flag}
+          awayFlag={away.flag}
+        />
       )}
 
       {!isFinished(match.status) && (
@@ -177,43 +214,7 @@ export function MatchDetail({
           />
         </div>
       )}
-    </div>
-  );
-}
-
-/** Comparaison pronostic / résultat réel + points gagnés, après la fin du match. */
-function PredictionResult({
-  match,
-  prediction,
-}: {
-  match: Match;
-  prediction: ScorePrediction | null;
-}) {
-  if (!prediction) {
-    return <p className="text-sm text-neutral-500">Tu n&apos;as pas parié sur ce match.</p>;
-  }
-  const base = predictionPoints(prediction, match) ?? 0;
-  const bonus = qualifierBonus(prediction, match);
-  const pts = base + bonus;
-  const tone =
-    base === POINTS.exact
-      ? "text-green-600 dark:text-green-400"
-      : base === POINTS.outcome
-        ? "text-amber-600 dark:text-amber-400"
-        : "text-red-600 dark:text-red-400";
-  const message =
-    base === POINTS.exact ? "Score exact !" : base === POINTS.outcome ? "Bon résultat" : "Raté";
-  return (
-    <div className="space-y-1 text-sm">
-      <p className={`text-lg font-bold ${tone}`}>
-        +{pts} pt{pts > 1 ? "s" : ""} · {message}
-      </p>
-      <p className="text-neutral-500">
-        Ton pronostic : {prediction.home} - {prediction.away}
-        {bonus > 0 && (
-          <span className="font-semibold text-amber-600 dark:text-amber-400"> · ✓ qualifié +2</span>
-        )}
-      </p>
+      </div>
     </div>
   );
 }
