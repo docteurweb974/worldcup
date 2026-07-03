@@ -11,6 +11,37 @@ import { getMatches, isFinished, type Match } from "@/lib/api";
  * `match_results` (write-through). Ensuite on le réutilise toujours, même si la
  * source le perd → les points attribués ne s'effacent plus jamais.
  */
+/**
+ * Un score est-il « définitif » et cohérent (donc figeable) ?
+ *  - composantes cohérentes si prolongation/TAB (fullTime = 90' + prolong. + TAB),
+ *  - le vainqueur annoncé correspond au score (écarte un score transitoire),
+ *  - pas de match nul en phase finale (impossible : un qualifié en sort toujours).
+ */
+function scoreSettled(m: Match): boolean {
+  const h = m.score.fullTime.home;
+  const a = m.score.fullTime.away;
+  if (h == null || a == null) return false;
+  const reg = m.score.regularTime;
+  const et = m.score.extraTime;
+  const pen = m.score.penalties;
+  if (reg != null) {
+    if (h !== (reg.home ?? 0) + (et?.home ?? 0) + (pen?.home ?? 0)) return false;
+    if (a !== (reg.away ?? 0) + (et?.away ?? 0) + (pen?.away ?? 0)) return false;
+  }
+  const outcome = h > a ? "H" : h < a ? "A" : "D";
+  const winner =
+    m.score.winner === "HOME_TEAM"
+      ? "H"
+      : m.score.winner === "AWAY_TEAM"
+        ? "A"
+        : m.score.winner === "DRAW"
+          ? "D"
+          : null;
+  if (winner == null || outcome !== winner) return false; // vainqueur ≠ score → transitoire
+  if (m.stage !== "GROUP_STAGE" && outcome === "D") return false; // nul impossible en KO
+  return true;
+}
+
 export async function getResilientMatches(): Promise<Match[]> {
   const matches = await getMatches();
 
@@ -43,19 +74,27 @@ export async function getResilientMatches(): Promise<Match[]> {
   const { data: stored } = await db
     .from("match_results")
     .select("match_id, home, away, reg_home, reg_away, pen_home, pen_away");
-  const known = new Map<number, KnownResult>(
-    (stored ?? []).map((r) => [
-      r.match_id,
-      {
-        home: r.home,
-        away: r.away,
-        regHome: r.reg_home,
-        regAway: r.reg_away,
-        penHome: r.pen_home,
-        penAway: r.pen_away,
-      },
-    ]),
-  );
+  // Auto-réparation : on ignore un score mémorisé que le flux live contredit
+  // franchement (vainqueur opposé). Il sera re-figé proprement au passage suivant.
+  const liveById = new Map(matches.map((m) => [m.id, m]));
+  const known = new Map<number, KnownResult>();
+  for (const r of stored ?? []) {
+    const live = liveById.get(r.match_id);
+    if (live && isFinished(live.status) && live.score.winner) {
+      const so = r.home > r.away ? "H" : r.home < r.away ? "A" : "D";
+      const wo =
+        live.score.winner === "HOME_TEAM" ? "H" : live.score.winner === "AWAY_TEAM" ? "A" : "D";
+      if (so !== wo) continue; // mémorisé incohérent → on l'écarte (re-capture propre)
+    }
+    known.set(r.match_id, {
+      home: r.home,
+      away: r.away,
+      regHome: r.reg_home,
+      regAway: r.reg_away,
+      penHome: r.pen_home,
+      penAway: r.pen_away,
+    });
+  }
 
   // Write-through : on ne capture un score QUE si le match est réellement terminé.
   // « Réellement » = statut FINISHED ET au moins 110 min écoulées depuis le coup
@@ -75,21 +114,16 @@ export async function getResilientMatches(): Promise<Match[]> {
     const pen = m.score.penalties;
     const penHome = pen?.home ?? null;
     const penAway = pen?.away ?? null;
-    // Cohérence : pour un match allé au-delà de 90', fullTime DOIT valoir
-    // reg + prolongation + TAB. Sinon on est en pleine séance (données partielles)
-    // → on ne fige PAS (sinon on garde un score faux, ex. capture mi-TAB).
-    const et = m.score.extraTime;
-    const consistent =
-      reg == null ||
-      (h === (reg.home ?? 0) + (et?.home ?? 0) + (pen?.home ?? 0) &&
-        a === (reg.away ?? 0) + (et?.away ?? 0) + (pen?.away ?? 0));
+    // On ne fige un score que s'il est définitif ET cohérent (cf. scoreSettled) :
+    // évite de figer un score transitoire (ex. 2-2 alors que le match finit 2-1)
+    // ou une capture en pleine séance de tirs au but.
     const elapsed = now - new Date(m.utcDate).getTime();
     if (
       isFinished(m.status) &&
       elapsed >= MIN_ELAPSED_MS &&
       h != null &&
       a != null &&
-      consistent &&
+      scoreSettled(m) &&
       !known.has(m.id)
     ) {
       known.set(m.id, { home: h, away: a, regHome, regAway, penHome, penAway });
