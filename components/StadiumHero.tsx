@@ -26,16 +26,19 @@ export function StadiumHero({
   stadium = "/stadium-1.jpg",
   backHref = "/calendrier",
   cardClassName = "border-white/20",
+  fullScreen = false,
   children,
 }: {
   stadium?: string;
   backHref?: string;
   /** Classes de bord/fond de la carte en verre (ex. bord vert quand enregistré). */
   cardClassName?: string;
+  /** Fond stade plein écran (matchs à venir) ; sinon hauteur au contenu (matchs terminés). */
+  fullScreen?: boolean;
   children: React.ReactNode;
 }) {
   return (
-    <div className="relative min-h-screen overflow-hidden">
+    <div className={`relative overflow-hidden ${fullScreen ? "min-h-screen" : ""}`}>
       {/* Fond stade PLEIN CADRE */}
       <div aria-hidden="true" className="absolute inset-0 bg-neutral-950">
         <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${stadium})` }} />

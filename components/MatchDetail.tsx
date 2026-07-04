@@ -118,6 +118,7 @@ export function MatchDetail({
 
       {!finished && (
         <StadiumHero
+          fullScreen
           cardClassName={
             savedScore && !isDirty
               ? "border-green-400/70 ring-1 ring-green-400/40"
