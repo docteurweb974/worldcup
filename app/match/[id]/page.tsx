@@ -1,6 +1,7 @@
 import { getResilientMatch } from "@/lib/results";
 import { isFinished } from "@/lib/api";
 import { createClient } from "@/lib/supabase/server";
+import { getMatchCommunity } from "@/lib/community";
 import { getStoredVideo } from "@/lib/videos";
 import { MatchDetail } from "@/components/MatchDetail";
 import { MatchHighlights } from "@/components/MatchHighlights";
@@ -36,12 +37,19 @@ export default async function MatchPage({ params }: { params: { id: string } }) 
     }
   }
 
-  // Résumé vidéo, uniquement si le match est terminé.
-  const video = isFinished(match.status) ? await getStoredVideo(id) : null;
+  // Pronos de la communauté + résumé vidéo : uniquement pour un match terminé.
+  const finished = isFinished(match.status);
+  const community = finished ? await getMatchCommunity(id) : null;
+  const video = finished ? await getStoredVideo(id) : null;
 
   return (
     <>
-      <MatchDetail match={match} prediction={prediction} isLoggedIn={!!user} />
+      <MatchDetail
+        match={match}
+        prediction={prediction}
+        isLoggedIn={!!user}
+        community={community}
+      />
       {video && <MatchHighlights youtubeId={video.youtube_id} title={video.title} />}
     </>
   );
