@@ -12,10 +12,12 @@ export function IcsButton({
   matches,
   filename,
   label,
+  variant = "cta",
 }: {
   matches: Match[];
   filename: string;
   label: string;
+  variant?: "cta" | "glass";
 }) {
   const { timezone } = usePreferences();
   const disabled = matches.length === 0;
@@ -38,7 +40,11 @@ export function IcsButton({
       type="button"
       onClick={handleDownload}
       disabled={disabled}
-      className="inline-flex min-h-tap cursor-pointer items-center gap-2 rounded-full bg-cta px-5 text-sm font-semibold text-cta-fg shadow-sm transition-[filter,transform] duration-200 hover:brightness-110 active:scale-95 disabled:opacity-50"
+      className={`inline-flex min-h-tap cursor-pointer items-center gap-2 rounded-full px-5 text-sm font-semibold shadow-sm transition-[filter,transform] duration-200 hover:brightness-110 active:scale-95 disabled:opacity-50 ${
+        variant === "glass"
+          ? "border border-white/25 bg-white/10 text-white backdrop-blur-md"
+          : "bg-cta text-cta-fg"
+      }`}
     >
       <span aria-hidden="true">📅</span> {label}
     </button>
