@@ -37,7 +37,7 @@ export function CalendarView({
   predictedMatchIds?: number[];
 }) {
   const { favorites, timezone, hydrated } = usePreferences();
-  const [view, setView] = useState<View>("mine");
+  const [view, setView] = useState<View>("all");
   const [selected, setSelected] = useState<string | null>(null);
   const predicted = useMemo(() => new Set(predictedMatchIds), [predictedMatchIds]);
   const chipRefs = useRef<Record<string, HTMLButtonElement | null>>({});
