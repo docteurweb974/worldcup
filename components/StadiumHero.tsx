@@ -25,10 +25,13 @@ export function FlagCircle({ tla, emoji }: { tla: string | null; emoji: string }
 export function StadiumHero({
   stadium = "/stadium-1.jpg",
   backHref = "/calendrier",
+  cardClassName = "border-white/20",
   children,
 }: {
   stadium?: string;
   backHref?: string;
+  /** Classes de bord/fond de la carte en verre (ex. bord vert quand enregistré). */
+  cardClassName?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -55,7 +58,9 @@ export function StadiumHero({
         </div>
 
         {/* Carte VERRE */}
-        <div className="mt-4 rounded-3xl border border-white/20 bg-white/10 p-5 shadow-2xl backdrop-blur-xl">
+        <div
+          className={`mt-4 rounded-3xl border bg-white/10 p-5 shadow-2xl backdrop-blur-xl transition-colors ${cardClassName}`}
+        >
           {children}
         </div>
       </div>

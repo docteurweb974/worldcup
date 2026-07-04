@@ -100,7 +100,13 @@ export function MatchDetail({
       )}
 
       {!finished && (
-        <StadiumHero>
+        <StadiumHero
+          cardClassName={
+            savedScore && !isDirty
+              ? "border-green-400/70 ring-1 ring-green-400/40"
+              : "border-white/20"
+          }
+        >
           <div className="text-center">
             <p className="text-sm font-bold uppercase tracking-widest">
               {live ? "En direct" : "À venir"}
@@ -130,20 +136,15 @@ export function MatchDetail({
             <FlagCircle tla={match.awayTeam.tla} emoji={away.flag} />
           </div>
 
-          <div className="mt-4 flex items-center justify-center gap-3">
-            <span className="flex-1 text-right text-base font-bold uppercase leading-tight">
-              {home.nameFr}
-            </span>
-            <span className="text-xs font-semibold text-white/40">VS</span>
-            <span className="flex-1 text-left text-base font-bold uppercase leading-tight">
-              {away.nameFr}
-            </span>
-          </div>
-
           {/* Mon pronostic intégré */}
           <div className="mt-4 border-t border-white/15 pt-4">
-            <p className="mb-3 text-center text-[10px] font-semibold uppercase tracking-widest text-white/60">
+            <p className="mb-3 flex items-center justify-center gap-2 text-center text-[10px] font-semibold uppercase tracking-widest text-white/60">
               Mon pronostic
+              {savedScore && !isDirty && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-green-500/25 px-2 py-0.5 text-green-100">
+                  ✓ Enregistré
+                </span>
+              )}
             </p>
             {canPredict && !isLoggedIn ? (
               <Link
