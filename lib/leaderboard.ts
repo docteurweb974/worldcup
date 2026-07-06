@@ -18,6 +18,7 @@ export interface LeaderboardEntry {
   rank: number;
   favoriteTla: string | null;
   survivorBonus: number; // bonus Survivor inclus dans les points (0 si aucun)
+  championBonus: number; // bonus Prédiction (finale) inclus dans les points (0 si aucun)
 }
 
 /**
@@ -78,17 +79,18 @@ export const getLeaderboard = cache(async (): Promise<LeaderboardEntry[]> => {
   // Tous les joueurs inscrits apparaissent (0 pt s'ils n'ont pas encore marqué).
   const entries = (profiles ?? []).map((prof) => {
     const a = agg.get(prof.id) ?? { points: 0, exact: 0, good: 0, played: 0 };
-    const bonus =
-      (survivorWinners.has(prof.id) ? SURVIVOR_BONUS : 0) + (championBonuses.get(prof.id) ?? 0);
+    const survivorBonus = survivorWinners.has(prof.id) ? SURVIVOR_BONUS : 0;
+    const championBonus = championBonuses.get(prof.id) ?? 0;
     return {
       userId: prof.id,
       username: prof.username,
-      points: a.points + bonus,
+      points: a.points + survivorBonus + championBonus,
       exact: a.exact,
       good: a.good,
       played: a.played,
       favoriteTla: (prof as { favorite_team?: string | null }).favorite_team ?? null,
-      survivorBonus: bonus,
+      survivorBonus,
+      championBonus,
     };
   });
 

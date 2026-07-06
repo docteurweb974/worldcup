@@ -53,6 +53,11 @@ function Spot({
             🏆 Survivor +{entry.survivorBonus} pts
           </span>
         )}
+        {entry.championBonus > 0 && (
+          <span className="mt-1 rounded-full bg-violet-400/20 px-1.5 py-0.5 text-[10px] font-bold text-violet-200">
+            🔮 Prédiction +{entry.championBonus} pts
+          </span>
+        )}
       </Link>
       {/* Marche du podium */}
       <div

@@ -4,6 +4,7 @@ import { getResilientMatches } from "@/lib/results";
 import { getUserBoosts } from "@/lib/boosts";
 import { getLeaderboard } from "@/lib/leaderboard";
 import { getSurvivorWinners } from "@/lib/survivor";
+import { getChampionBonuses } from "@/lib/champion";
 import { POINTS, predictionPoints, qualifierBonus, type Qualifier } from "@/lib/predictions";
 import type { PlayerStats } from "@/lib/badges";
 
@@ -21,7 +22,7 @@ const EMPTY: PlayerStats = {
   hasFavorite: false,
   knockoutExact: false,
   cleanSheetExact: false,
-  breakdown: { pronos: 0, boost: 0, qualifier: 0, survivor: 0 },
+  breakdown: { pronos: 0, boost: 0, qualifier: 0, survivor: 0, champion: 0 },
 };
 
 /** Calcule les statistiques d'un joueur (pour ses badges et son palmarès). */
@@ -109,22 +110,33 @@ export async function getPlayerStats(userId: string): Promise<PlayerStats> {
     if (total > 0 && (predByRound.get(k) ?? 0) >= total) fullMatchdays += 1;
   }
 
-  const [leaderboard, survivorWinners] = await Promise.all([getLeaderboard(), getSurvivorWinners()]);
+  const [leaderboard, survivorWinners, championBonuses] = await Promise.all([
+    getLeaderboard(),
+    getSurvivorWinners(),
+    getChampionBonuses(),
+  ]);
   const me = leaderboard.find((e) => e.userId === userId);
   const rank = me?.rank ?? 0;
   const bdSurvivor = survivorWinners.has(userId) ? SURVIVOR_BONUS : 0;
+  const bdChampion = championBonuses.get(userId) ?? 0;
 
   return {
     predictions: predList.length,
     exact,
     good,
     played: finished.length,
-    // Total identique au classement (inclut le bonus Survivor) ; repli sur le calcul local.
-    points: me?.points ?? points + bdSurvivor,
+    // Total identique au classement (inclut Survivor + Prédiction) ; repli sur le calcul local.
+    points: me?.points ?? points + bdSurvivor + bdChampion,
     streak,
     fullMatchdays,
     rank,
-    breakdown: { pronos: bdPronos, boost: bdBoost, qualifier: bdQualifier, survivor: bdSurvivor },
+    breakdown: {
+      pronos: bdPronos,
+      boost: bdBoost,
+      qualifier: bdQualifier,
+      survivor: bdSurvivor,
+      champion: bdChampion,
+    },
     hasFavorite: !!profile?.favorite_team,
     knockoutExact,
     cleanSheetExact,

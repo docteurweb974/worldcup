@@ -113,6 +113,15 @@ export function ProfileView({
                     </span>
                   </div>
                 )}
+                {stats.breakdown.champion > 0 && (
+                  <div className="flex items-center gap-2">
+                    <span aria-hidden="true">🔮</span>
+                    <span className="text-neutral-500">
+                      Prédiction finale{" "}
+                      <span className="font-bold text-accent">+{stats.breakdown.champion}pts</span>
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 

@@ -18,6 +18,7 @@ export interface PlayerStats {
     boost: number; // points supplémentaires du Boost ×2
     qualifier: number; // bonus « qualifié » (8es+)
     survivor: number; // bonus Survivor (+10)
+    champion: number; // bonus Prédiction (finale)
   };
 }
 
