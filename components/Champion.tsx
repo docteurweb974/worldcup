@@ -308,75 +308,39 @@ export function Champion({ data }: { data: ChampionData }) {
         return null;
       })()}
 
-      {/* Joueurs en lice (avant verrouillage) */}
-      <section className={`space-y-3 ${data.revealPicks || DEMO_LOCK_PREVIEW ? "hidden" : ""}`}>
-        <div className="flex items-center justify-between">
-          <h2 className="font-bold">Encore en lice</h2>
-          <span className="text-sm font-semibold text-neutral-500">
-            {data.aliveCount}/{data.totalCount} joueurs
-          </span>
-        </div>
-
-        {data.alive.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-neutral-300 p-6 text-center text-sm text-neutral-500 dark:border-neutral-700">
-            Aucune finale pour l’instant. Sois le premier à composer la tienne 🏆
-          </p>
-        ) : (
-          <div className="space-y-2">
-            {data.alive.map((g) => {
-              const isChamp = data.champion?.id === g.team.id;
-              return (
-                <div
-                  key={g.team.id}
-                  className={`rounded-2xl border p-3 ${
-                    isChamp
-                      ? "border-yellow-400 bg-yellow-50 dark:bg-yellow-500/10"
-                      : "border-neutral-200 dark:border-neutral-800"
-                  }`}
-                >
-                  <div className="mb-1.5 flex items-center gap-2">
-                    <span className="text-xl">{g.team.flag}</span>
-                    <span className="font-semibold">{g.team.fr}</span>
-                    {isChamp && <span className="text-sm font-bold text-yellow-600">🏆 Championne</span>}
-                    <span className="ml-auto text-xs text-neutral-400">
-                      {g.usernames.length} pari{g.usernames.length > 1 ? "s" : ""}
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {g.usernames.map((u) => (
-                      <span
-                        key={u}
-                        className="rounded-full bg-neutral-100 px-2.5 py-0.5 text-xs font-medium dark:bg-neutral-800"
-                      >
-                        {u}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
+      {/* Joueurs ayant pronostiqué (avant verrouillage) — sans révéler l'équipe */}
+      {!data.revealPicks && (
+        <section className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="font-bold">Ont composé leur finale</h2>
+            <span className="text-sm font-semibold text-neutral-500">
+              {data.participants.length} joueur{data.participants.length > 1 ? "s" : ""}
+            </span>
           </div>
-        )}
 
-        {data.eliminated.length > 0 && (
-          <div className="rounded-2xl border border-neutral-200 p-3 dark:border-neutral-800">
-            <p className="mb-2 text-sm font-bold text-neutral-400">
-              Champions éliminés ({data.eliminated.length})
+          {data.participants.length === 0 ? (
+            <p className="rounded-2xl border border-dashed border-neutral-300 p-6 text-center text-sm text-neutral-500 dark:border-neutral-700">
+              Aucune finale pour l’instant. Sois le premier à composer la tienne 🏆
             </p>
-            <div className="flex flex-wrap gap-1.5">
-              {data.eliminated.map((e, i) => (
-                <span
-                  key={`${e.username}-${i}`}
-                  className="rounded-full bg-neutral-100 px-2.5 py-0.5 text-xs text-neutral-400 line-through dark:bg-neutral-800"
-                  title={e.team.fr}
-                >
-                  {e.team.flag} {e.username}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-      </section>
+          ) : (
+            <>
+              <div className="flex flex-wrap gap-1.5">
+                {data.participants.map((u, i) => (
+                  <span
+                    key={`${u}-${i}`}
+                    className="rounded-full bg-neutral-100 px-2.5 py-1 text-xs font-medium dark:bg-neutral-800"
+                  >
+                    {u}
+                  </span>
+                ))}
+              </div>
+              <p className="text-xs text-neutral-400">
+                🔒 Les pronostics seront dévoilés à la fin des 8es.
+              </p>
+            </>
+          )}
+        </section>
+      )}
     </div>
   );
 }

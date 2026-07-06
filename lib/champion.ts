@@ -289,6 +289,7 @@ export interface ChampionData {
   alive: ChampionGroup[]; // encore en lice, regroupés par équipe
   eliminated: { username: string; team: ChampionTeam }[];
   revealPicks: boolean; // true une fois verrouillé → on montre les pronostics
+  participants: string[]; // pseudos des joueurs ayant pronostiqué (sans révéler l'équipe)
   allPicks: ChampionPickView[]; // pronostics détaillés (uniquement si verrouillé)
   aliveCount: number;
   totalCount: number;
@@ -310,6 +311,7 @@ export async function getChampionData(viewerId: string): Promise<ChampionData> {
     alive: [],
     eliminated: [],
     revealPicks: false,
+    participants: [],
     allPicks: [],
     aliveCount: 0,
     totalCount: 0,
@@ -424,6 +426,11 @@ export async function getChampionData(viewerId: string): Promise<ChampionData> {
   else if (elim.has(my.team_id)) myState = "out";
   else myState = "alive";
 
+  // Pseudos des participants (sans révéler leur équipe) — visible avant verrouillage.
+  const participants = picks
+    .map((p) => nameById.get(p.user_id) ?? "Joueur")
+    .sort((a, b) => a.localeCompare(b));
+
   // Pronostics détaillés (champion + finaliste + score), révélés une fois verrouillé.
   const allPicks: ChampionPickView[] = locked
     ? picks
@@ -446,6 +453,7 @@ export async function getChampionData(viewerId: string): Promise<ChampionData> {
     alive,
     eliminated,
     revealPicks: locked,
+    participants,
     allPicks,
     aliveCount,
     totalCount: picks.length,
