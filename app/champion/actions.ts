@@ -10,9 +10,10 @@ export type ChampionState = { error?: string; ok?: boolean } | undefined;
 
 const validGoals = (n: number) => Number.isInteger(n) && n >= 0 && n <= 20;
 
-/** Enregistre le champion prédit + le score exact de la finale (champion-adversaire). */
+/** Enregistre la finale prédite : champion + finaliste + score exact (champion-finaliste). */
 export async function pickChampion(
   teamId: number,
+  finalistId: number,
   champGoals: number,
   oppGoals: number,
 ): Promise<ChampionState> {
@@ -28,12 +29,27 @@ export async function pickChampion(
   }
 
   const matches = await getMatches();
-  const { locked, teamOk } = championPickValidity(matches, teamId);
-  if (locked) return { error: "Trop tard : les choix sont verrouillés (8es de finale commencés)." };
-  if (!teamOk) return { error: "Cette équipe n'est plus en lice." };
+  const { locked, championOk, finalistOk, coherent } = championPickValidity(
+    matches,
+    teamId,
+    finalistId,
+  );
+  if (locked) return { error: "Trop tard : les choix sont verrouillés (8es de finale terminés)." };
+  if (!championOk || !finalistOk) return { error: "Une de tes équipes n'est plus en lice." };
+  if (!coherent) {
+    return { error: "Champion et finaliste doivent venir de moitiés opposées du tableau." };
+  }
 
   const { error } = await championTable(createAdminClient()).upsert(
-    [{ user_id: user.id, team_id: teamId, champ_goals: champGoals, opp_goals: oppGoals }],
+    [
+      {
+        user_id: user.id,
+        team_id: teamId,
+        finalist_id: finalistId,
+        champ_goals: champGoals,
+        opp_goals: oppGoals,
+      },
+    ],
     { onConflict: "user_id" },
   );
   if (error) return { error: "Enregistrement impossible." };

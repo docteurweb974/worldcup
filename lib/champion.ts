@@ -4,17 +4,21 @@ import { getResilientMatches } from "@/lib/results";
 import { isFinished, matchScore, type Match } from "@/lib/api";
 import { displayTeam } from "@/data/teams";
 
-// Prédis le Champion : 1 choix d'équipe + score exact de la finale.
-//  - bon champion           → +10 pts
-//  - bon champion + score   → +30 pts
-// Verrouillage : coup d'envoi du 1er 8e de finale. Score exact = score final
-// (prolongation comprise, hors tirs au but), via matchScore.
+// Prédis la finale : choisis les 2 équipes qui iront en finale (1 de chaque
+// moitié du tableau), désigne le vainqueur, mets le score.
+//  - bonne affiche (les 2 finalistes)  → +10 pts   (tout ou rien, ordre libre)
+//  - bon champion (le vainqueur)        → +10 pts
+//  - bon champion + score exact         → +20 pts (en plus) → « tout bon » = 40 pts
+// Cohérence : les deux finalistes viennent de moitiés opposées du bracket.
+// Verrouillage : fin du dernier 8e de finale.
 export const CHAMPION_TEAM_BONUS = 10;
-export const CHAMPION_EXACT_BONUS = 30;
+export const CHAMPION_FINALIST_BONUS = 10;
+export const CHAMPION_EXACT_BONUS = 20;
 
 interface PickRow {
   user_id: string;
-  team_id: number;
+  team_id: number; // équipe championne prédite
+  finalist_id: number | null; // finaliste (vice-champion) prédit
   champ_goals: number;
   opp_goals: number;
 }
@@ -25,7 +29,10 @@ export function championTable(admin: ReturnType<typeof createAdminClient>) {
     admin as unknown as {
       from: (t: string) => {
         select: (c: string) => Promise<{ data: PickRow[] | null }>;
-        upsert: (rows: PickRow[], opts: { onConflict: string }) => Promise<{ error: unknown }>;
+        upsert: (
+          rows: Record<string, unknown>[],
+          opts: { onConflict: string },
+        ) => Promise<{ error: unknown }>;
       };
     }
   ).from("champion_picks");
@@ -54,20 +61,27 @@ function eliminatedTeamIds(matches: Match[]): Set<number> {
   return out;
 }
 
-/** Verrouillage = coup d'envoi du 1er 8e de finale (null si pas encore programmé). */
+/**
+ * Verrouillage = fin du dernier 8e de finale (≈ coup d'envoi du dernier 8e
+ * + 150 min pour couvrir prolongation/TAB). Null si les 8es ne sont pas encore
+ * programmés → le jeu reste ouvert.
+ */
+const LOCK_BUFFER_MS = 150 * 60 * 1000;
 function lockTime(matches: Match[]): number | null {
-  const l16 = matches.filter((m) => m.stage === "LAST_16" && m.homeTeam.id != null);
+  const l16 = matches.filter((m) => m.stage === "LAST_16" && m.utcDate);
   if (l16.length === 0) return null;
-  return Math.min(...l16.map((m) => new Date(m.utcDate).getTime()));
+  const lastKickoff = Math.max(...l16.map((m) => new Date(m.utcDate).getTime()));
+  return lastKickoff + LOCK_BUFFER_MS;
 }
 
 interface FinalResult {
   winnerId: number;
+  loserId: number; // finaliste (vice-champion) réel
   winnerGoals: number;
   loserGoals: number;
 }
 
-/** Résultat de la finale (vainqueur + score final hors TAB), sinon null. */
+/** Résultat de la finale (vainqueur + finaliste + score final hors TAB), sinon null. */
 function finalResult(matches: Match[]): FinalResult | null {
   const f = matches.find((m) => m.stage === "FINAL" && scored(m));
   if (!f || (f.score.winner !== "HOME_TEAM" && f.score.winner !== "AWAY_TEAM")) return null;
@@ -75,26 +89,90 @@ function finalResult(matches: Match[]): FinalResult | null {
   if (ds.home == null || ds.away == null) return null;
   const homeWon = f.score.winner === "HOME_TEAM";
   const winnerId = (homeWon ? f.homeTeam.id : f.awayTeam.id) as number | null;
-  if (winnerId == null) return null;
+  const loserId = (homeWon ? f.awayTeam.id : f.homeTeam.id) as number | null;
+  if (winnerId == null || loserId == null) return null;
   return {
     winnerId,
+    loserId,
     winnerGoals: homeWon ? ds.home : ds.away,
     loserGoals: homeWon ? ds.away : ds.home,
   };
 }
 
+/**
+ * Barème additif :
+ *  +10 bonne affiche (les 2 finalistes réels, ordre libre)
+ *  +10 bon champion (le vainqueur réel)
+ *  +20 bon champion + score exact.
+ * Le score exact ne compte que si le champion est correct.
+ */
 function pointsFor(pick: PickRow, fr: FinalResult | null): number {
-  if (!fr || pick.team_id !== fr.winnerId) return 0;
-  return pick.champ_goals === fr.winnerGoals && pick.opp_goals === fr.loserGoals
-    ? CHAMPION_EXACT_BONUS
-    : CHAMPION_TEAM_BONUS;
+  if (!fr) return 0;
+  let pts = 0;
+
+  // Bonne affiche : les 2 équipes prédites = les 2 finalistes réels (peu importe l'ordre).
+  const goodMatchup =
+    pick.finalist_id != null &&
+    ((pick.team_id === fr.winnerId && pick.finalist_id === fr.loserId) ||
+      (pick.team_id === fr.loserId && pick.finalist_id === fr.winnerId));
+  if (goodMatchup) pts += CHAMPION_FINALIST_BONUS;
+
+  // Bon champion (+ score exact).
+  if (pick.team_id === fr.winnerId) {
+    pts += CHAMPION_TEAM_BONUS;
+    if (pick.champ_goals === fr.winnerGoals && pick.opp_goals === fr.loserGoals) {
+      pts += CHAMPION_EXACT_BONUS;
+    }
+  }
+  return pts;
 }
 
-/** Validation côté action : le jeu est-il verrouillé ? l'équipe est-elle choisissable ? */
+/**
+ * Moitié du bracket (« L »/« R ») par 8e (triés par id = ordre officiel).
+ * Le tableau est ENTRELACÉ : deux 8es consécutifs forment un quart, et les
+ * quarts alternent de côté (demie gauche = quarts 0 & 2, demie droite = 1 & 3).
+ * D'où le côté d'un 8e d'indice i : gauche si floor(i/2) est pair.
+ * Ex. 375/376 → gauche, 377/378 → droite, 379/380 → gauche, 381/382 → droite.
+ */
+function last16Side(i: number): "L" | "R" {
+  return Math.floor(i / 2) % 2 === 0 ? "L" : "R";
+}
+
+/**
+ * Côté d'un match selon son tour (matchs triés par id dans le tour).
+ * - 8es : numérotation ENTRELACÉE (LLRRLLRR) → floor(i/2) pair = gauche.
+ * - Quarts / demies : numérotation en BLOC → 1re moitié = gauche.
+ * (Vérifié sur l'API : QF 537383 France–Maroc = gauche, 537385 Norvège–Angleterre = droite.)
+ */
+function roundSide(stage: string, i: number, total: number): "L" | "R" | null {
+  if (stage === "LAST_16") return last16Side(i);
+  if (stage === "QUARTER_FINALS" || stage === "SEMI_FINALS") return i < total / 2 ? "L" : "R";
+  return null; // FINAL : au centre
+}
+
+/** Moitié du tableau pour chaque équipe arrivée en 8es (finalistes = côtés opposés). */
+export function teamHalves(matches: Match[]): Map<number, "L" | "R"> {
+  const out = new Map<number, "L" | "R">();
+  const l16 = matches
+    .filter((m) => m.stage === "LAST_16")
+    .sort((a, b) => a.id - b.id);
+  l16.forEach((m, i) => {
+    const side = last16Side(i);
+    if (m.homeTeam.id != null) out.set(m.homeTeam.id, side);
+    if (m.awayTeam.id != null) out.set(m.awayTeam.id, side);
+  });
+  return out;
+}
+
+/**
+ * Validation côté action : verrou + champion/finaliste choisissables + finale
+ * cohérente (deux équipes distinctes, de moitiés opposées).
+ */
 export function championPickValidity(
   matches: Match[],
-  teamId: number,
-): { locked: boolean; teamOk: boolean } {
+  championId: number,
+  finalistId: number,
+): { locked: boolean; championOk: boolean; finalistOk: boolean; coherent: boolean } {
   const lock = lockTime(matches);
   const locked = lock != null && Date.now() >= lock;
   const elim = eliminatedTeamIds(matches);
@@ -104,24 +182,40 @@ export function championPickValidity(
     if (m.homeTeam.id != null) eightsIds.add(m.homeTeam.id);
     if (m.awayTeam.id != null) eightsIds.add(m.awayTeam.id);
   }
-  return { locked, teamOk: eightsIds.has(teamId) && !elim.has(teamId) };
+  const halves = teamHalves(matches);
+  const championOk = eightsIds.has(championId) && !elim.has(championId);
+  const finalistOk = eightsIds.has(finalistId) && !elim.has(finalistId);
+  const coherent =
+    championId !== finalistId &&
+    halves.get(championId) != null &&
+    halves.get(finalistId) != null &&
+    halves.get(championId) !== halves.get(finalistId);
+  return { locked, championOk, finalistOk, coherent };
 }
 
 async function loadAll() {
   const admin = createAdminClient();
   const [{ data: picks }, { data: profiles }, matches] = await Promise.all([
-    championTable(admin).select("user_id, team_id, champ_goals, opp_goals"),
+    // select("*") : tolère l'absence de la colonne finalist_id avant migration.
+    championTable(admin).select("*"),
     admin.from("profiles").select("id, username"),
     getResilientMatches().catch(() => [] as Match[]),
   ]);
+  const rows = ((picks ?? []) as Partial<PickRow>[]).map((p) => ({
+    user_id: p.user_id as string,
+    team_id: p.team_id as number,
+    finalist_id: p.finalist_id ?? null,
+    champ_goals: p.champ_goals as number,
+    opp_goals: p.opp_goals as number,
+  }));
   return {
-    picks: (picks ?? []) as PickRow[],
+    picks: rows as PickRow[],
     profiles: (profiles ?? []) as { id: string; username: string }[],
     matches,
   };
 }
 
-/** Bonus Champion pour le classement (10 ou 30 pts une fois la finale jouée). */
+/** Bonus Champion pour le classement (finaliste/champion/score exact, une fois la finale jouée). */
 export async function getChampionBonuses(): Promise<Map<string, number>> {
   const out = new Map<string, number>();
   let data;
@@ -143,6 +237,7 @@ export interface ChampionTeam {
   id: number;
   fr: string;
   flag: string;
+  half: "L" | "R" | null; // moitié du tableau (pour composer une finale cohérente)
 }
 export interface BracketTeam {
   id: number | null; // null = « À déterminer »
@@ -155,6 +250,7 @@ export interface BracketMatch {
   home: BracketTeam;
   away: BracketTeam;
   winnerId: number | null; // équipe qualifiée (si match joué)
+  side: "L" | "R" | null; // moitié du tableau (null = finale, au centre)
 }
 export interface BracketRound {
   key: string;
@@ -177,7 +273,12 @@ export interface ChampionData {
   lockAtIso: string | null;
   availableTeams: ChampionTeam[];
   bracket: BracketRound[];
-  myPick: { team: ChampionTeam; champGoals: number; oppGoals: number } | null;
+  myPick: {
+    team: ChampionTeam; // champion prédit
+    finalist: ChampionTeam | null; // finaliste (vice-champion) prédit
+    champGoals: number;
+    oppGoals: number;
+  } | null;
   alive: ChampionGroup[]; // encore en lice, regroupés par équipe
   eliminated: { username: string; team: ChampionTeam }[];
   aliveCount: number;
@@ -222,9 +323,10 @@ export async function getChampionData(viewerId: string): Promise<ChampionData> {
     if (m.homeTeam.id != null) teamName.set(m.homeTeam.id, m.homeTeam.name);
     if (m.awayTeam.id != null) teamName.set(m.awayTeam.id, m.awayTeam.name);
   }
+  const halves = teamHalves(matches);
   const teamOf = (id: number): ChampionTeam => {
     const d = displayTeam(id, teamName.get(id) ?? null);
-    return { id, fr: d.nameFr, flag: d.flag };
+    return { id, fr: d.nameFr, flag: d.flag, half: halves.get(id) ?? null };
   };
 
   const elim = eliminatedTeamIds(matches);
@@ -262,10 +364,16 @@ export async function getChampionData(viewerId: string): Promise<ChampionData> {
   const bracket: BracketRound[] = BRACKET_ROUNDS.map(([key, label]) => ({
     key,
     label,
+    // Tri par id = ordre officiel du bracket ; side = moitié entrelacée.
     matches: matches
       .filter((m) => m.stage === key)
-      .sort((a, b) => +new Date(a.utcDate) - +new Date(b.utcDate))
-      .map((m) => ({ home: teamFromMt(m.homeTeam), away: teamFromMt(m.awayTeam), winnerId: winnerOf(m) })),
+      .sort((a, b) => a.id - b.id)
+      .map((m, i, arr) => ({
+        home: teamFromMt(m.homeTeam),
+        away: teamFromMt(m.awayTeam),
+        winnerId: winnerOf(m),
+        side: roundSide(key, i, arr.length),
+      })),
   }));
 
   // Joueurs : en lice (équipe non éliminée) vs éliminés.
@@ -290,7 +398,12 @@ export async function getChampionData(viewerId: string): Promise<ChampionData> {
 
   const my = picks.find((p) => p.user_id === viewerId) ?? null;
   const myPick = my
-    ? { team: teamOf(my.team_id), champGoals: my.champ_goals, oppGoals: my.opp_goals }
+    ? {
+        team: teamOf(my.team_id),
+        finalist: my.finalist_id != null ? teamOf(my.finalist_id) : null,
+        champGoals: my.champ_goals,
+        oppGoals: my.opp_goals,
+      }
     : null;
   const myPoints = my && fr ? pointsFor(my, fr) : null;
 
