@@ -59,6 +59,18 @@ export default async function PronosPage() {
           </div>
           <span className="shrink-0 text-xl text-accent" aria-hidden="true">→</span>
         </Link>
+        <Link
+          href="/champion"
+          className="flex items-center justify-between gap-3 rounded-2xl border border-violet-400 bg-gradient-to-r from-violet-50 to-fuchsia-50 p-4 transition hover:brightness-[1.02] dark:from-violet-500/10 dark:to-fuchsia-500/10"
+        >
+          <div>
+            <p className="font-bold">🔮 Prédiction</p>
+            <p className="text-sm text-neutral-600 dark:text-neutral-400">
+              Devine la finale : les 2 finalistes + le vainqueur + le score. Jusqu’à +40 pts !
+            </p>
+          </div>
+          <span className="shrink-0 text-xl text-accent" aria-hidden="true">→</span>
+        </Link>
         <ImportLocalPredictions />
       </div>
       <PronosBoard
