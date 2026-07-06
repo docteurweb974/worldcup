@@ -135,6 +135,25 @@ async function upsertSurvivorPick(roundKey, matchId, teamId) {
     body: JSON.stringify([{ user_id: BOT_ID, round_key: roundKey, match_id: matchId, team_id: teamId }]),
   });
 }
+async function existingChampionPick() {
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/champion_picks?user_id=eq.${BOT_ID}&select=team_id,finalist_id`,
+    { headers: sbHeaders },
+  );
+  if (!res.ok) return null;
+  const rows = await res.json();
+  return rows[0] ?? null;
+}
+async function upsertChampionPick(teamId, finalistId, champGoals, oppGoals) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/champion_picks`, {
+    method: "POST",
+    headers: { ...sbHeaders, Prefer: "resolution=merge-duplicates,return=minimal" },
+    body: JSON.stringify([
+      { user_id: BOT_ID, team_id: teamId, finalist_id: finalistId, champ_goals: champGoals, opp_goals: oppGoals },
+    ]),
+  });
+  if (!res.ok) console.error(`champion upsert ${res.status} : ${await res.text()}`);
+}
 
 // ───────────────────────── Contexte tournoi ─────────────────────────
 function recentForm(teamId, all) {
@@ -318,6 +337,87 @@ async function main() {
   // il dépend des pronos déjà enregistrés, pas seulement de ceux du run.
   await placeBoosts(matches, now);
   await placeSurvivorPick(matches, now);
+  await placeChampionPick(matches, standings, now);
+}
+
+// Moitié du bracket (« L »/« R ») : 8es triés par id, floor(i/2) pair = gauche.
+function teamHalves(matches) {
+  const out = new Map();
+  const l16 = matches.filter((m) => m.stage === "LAST_16").sort((a, b) => a.id - b.id);
+  l16.forEach((m, i) => {
+    const side = Math.floor(i / 2) % 2 === 0 ? "L" : "R";
+    if (m.homeTeam.id != null) out.set(m.homeTeam.id, side);
+    if (m.awayTeam.id != null) out.set(m.awayTeam.id, side);
+  });
+  return out;
+}
+// Équipes éliminées = perdants des matchs à élimination terminés.
+function eliminatedIds(matches) {
+  const out = new Set();
+  for (const m of matches) {
+    if (m.stage === "GROUP_STAGE") continue;
+    if (!isFinished(m.status) || m.score?.fullTime?.home == null) continue;
+    if (m.score.winner === "HOME_TEAM" && m.awayTeam.id != null) out.add(m.awayTeam.id);
+    else if (m.score.winner === "AWAY_TEAM" && m.homeTeam.id != null) out.add(m.homeTeam.id);
+  }
+  return out;
+}
+// Force d'une équipe d'après le classement de poule (points, puis diff, puis buts).
+function teamStrength(standings) {
+  const s = new Map();
+  for (const g of standings) {
+    for (const r of g.table ?? []) {
+      if (r.team?.id == null) continue;
+      s.set(r.team.id, r.points * 100 + (r.goalsFor - r.goalsAgainst) * 10 + r.goalsFor);
+    }
+  }
+  return s;
+}
+
+/**
+ * Prédiction « finale » du bot : 1 équipe par moitié (les plus fortes encore en
+ * lice), la meilleure championne, un score plausible. Posée une seule fois, tant
+ * que le jeu n'est pas verrouillé (fin du dernier 8e).
+ */
+async function placeChampionPick(matches, standings, now) {
+  const l16 = matches.filter((m) => m.stage === "LAST_16" && m.utcDate);
+  if (l16.length === 0) return; // 8es pas encore programmés
+  const lock = Math.max(...l16.map((m) => new Date(m.utcDate).getTime())) + 150 * 60 * 1000;
+  if (now >= lock) return; // verrouillé
+
+  const existing = await existingChampionPick().catch(() => null);
+  if (existing && existing.finalist_id != null) return; // déjà joué
+
+  const halves = teamHalves(matches);
+  const elim = eliminatedIds(matches);
+  const strength = teamStrength(standings);
+  const nameById = new Map();
+  for (const m of matches) {
+    if (m.homeTeam.id != null) nameById.set(m.homeTeam.id, label(m.homeTeam));
+    if (m.awayTeam.id != null) nameById.set(m.awayTeam.id, label(m.awayTeam));
+  }
+
+  const byHalf = { L: [], R: [] };
+  for (const [id, side] of halves) {
+    if (elim.has(id)) continue;
+    byHalf[side].push({ id, s: strength.get(id) ?? 0 });
+  }
+  const best = (arr) => arr.sort((a, b) => b.s - a.s)[0];
+  const bestL = best(byHalf.L);
+  const bestR = best(byHalf.R);
+  if (!bestL || !bestR) return; // une moitié sans équipe vivante
+
+  const [champ, fin] = bestL.s >= bestR.s ? [bestL, bestR] : [bestR, bestL];
+  // Score plausible selon l'écart de force.
+  const diff = champ.s - fin.s;
+  const champGoals = 2;
+  const oppGoals = diff >= 300 ? 0 : 1;
+
+  await upsertChampionPick(champ.id, fin.id, champGoals, oppGoals);
+  console.log(
+    `  🔮 Prédiction → 🏆 ${nameById.get(champ.id) ?? champ.id} bat ` +
+      `${nameById.get(fin.id) ?? fin.id} ${champGoals}-${oppGoals}`,
+  );
 }
 
 /**

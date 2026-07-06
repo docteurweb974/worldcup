@@ -17,6 +17,16 @@ export interface Announcement {
 
 export const ANNOUNCEMENTS: Announcement[] = [
   {
+    id: "prediction-game",
+    emoji: "🔮",
+    title: "Nouveau jeu : Prédiction",
+    description:
+      "Devine la finale de la Coupe du Monde 2026 : choisis les 2 équipes qui iront en finale, le vainqueur et le score. Bonne affiche +10, bon champion +10, score exact +20 — jusqu'à +40 pts au classement ! Verrouillé à la fin des 8es.",
+    href: "/champion",
+    cta: "Composer ma finale 🔮",
+    from: "2026-07-06T00:00:00+02:00",
+  },
+  {
     id: "knockout-qualifier",
     emoji: "🏆",
     title: "8es de finale : choisis le qualifié !",

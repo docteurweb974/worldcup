@@ -1,0 +1,36 @@
+name: Notif annonce (manuel)
+
+# Déclenchement 100% manuel : envoie une notification d'annonce à tous les
+# abonnés, une seule fois (verrou notification_log sur ANNOUNCE_KEY).
+on:
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Renvoyer même si déjà envoyée (test)"
+        type: boolean
+        default: false
+
+concurrency:
+  group: notify-announce
+  cancel-in-progress: false
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Envoyer la notif d'annonce
+        run: node scripts/notify-announce.mjs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          VAPID_SUBJECT: ${{ secrets.VAPID_SUBJECT }}
+          FORCE: ${{ inputs.force && '1' || '' }}

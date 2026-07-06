@@ -268,6 +268,13 @@ export interface ChampionGroup {
   team: ChampionTeam;
   usernames: string[];
 }
+export interface ChampionPickView {
+  username: string;
+  champion: ChampionTeam;
+  finalist: ChampionTeam | null;
+  champGoals: number;
+  oppGoals: number;
+}
 export interface ChampionData {
   locked: boolean;
   lockAtIso: string | null;
@@ -281,6 +288,8 @@ export interface ChampionData {
   } | null;
   alive: ChampionGroup[]; // encore en lice, regroupés par équipe
   eliminated: { username: string; team: ChampionTeam }[];
+  revealPicks: boolean; // true une fois verrouillé → on montre les pronostics
+  allPicks: ChampionPickView[]; // pronostics détaillés (uniquement si verrouillé)
   aliveCount: number;
   totalCount: number;
   champion: ChampionTeam | null; // si finale jouée
@@ -300,6 +309,8 @@ export async function getChampionData(viewerId: string): Promise<ChampionData> {
     myPick: null,
     alive: [],
     eliminated: [],
+    revealPicks: false,
+    allPicks: [],
     aliveCount: 0,
     totalCount: 0,
     champion: null,
@@ -413,6 +424,19 @@ export async function getChampionData(viewerId: string): Promise<ChampionData> {
   else if (elim.has(my.team_id)) myState = "out";
   else myState = "alive";
 
+  // Pronostics détaillés (champion + finaliste + score), révélés une fois verrouillé.
+  const allPicks: ChampionPickView[] = locked
+    ? picks
+        .map((p) => ({
+          username: nameById.get(p.user_id) ?? "Joueur",
+          champion: teamOf(p.team_id),
+          finalist: p.finalist_id != null ? teamOf(p.finalist_id) : null,
+          champGoals: p.champ_goals,
+          oppGoals: p.opp_goals,
+        }))
+        .sort((a, b) => a.username.localeCompare(b.username))
+    : [];
+
   return {
     locked,
     lockAtIso: lock != null ? new Date(lock).toISOString() : null,
@@ -421,6 +445,8 @@ export async function getChampionData(viewerId: string): Promise<ChampionData> {
     myPick,
     alive,
     eliminated,
+    revealPicks: locked,
+    allPicks,
     aliveCount,
     totalCount: picks.length,
     champion,
