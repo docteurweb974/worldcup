@@ -17,7 +17,9 @@ export interface PredItem {
   aet: boolean; // décidé en prolongation (sans TAB)
   reg: string | null; // score à 90' « 1-1 » si le match est allé au-delà
   pred: string;
+  base: number; // points du score seul (hors Boost et bonus qualifié)
   pts: number;
+  qualifier: { flag: string; fr: string; correct: boolean } | null; // qualifié choisi (nul 8es+)
   boosted: boolean;
   utcDate: string;
 }
@@ -88,7 +90,15 @@ export async function getFinishedPredictionsByRound(userId: string): Promise<Pre
       aet: ds.aet,
       reg: reg?.home != null ? `${reg.home}-${reg.away}` : null,
       pred: `${p.home}-${p.away}`,
+      base,
       pts: (isB ? base * 2 : base) + bonus,
+      qualifier: qualifier
+        ? {
+            flag: qualifier === "home" ? home.flag : away.flag,
+            fr: qualifier === "home" ? home.nameFr : away.nameFr,
+            correct: bonus > 0,
+          }
+        : null,
       boosted: isB,
       utcDate: m.utcDate,
     };

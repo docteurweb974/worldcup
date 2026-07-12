@@ -6,11 +6,10 @@ import { POINTS } from "@/lib/predictions";
 import type { PredRound, PredItem } from "@/lib/player-predictions";
 
 function PredRow({ it }: { it: PredItem }) {
-  const base = it.boosted ? it.pts / 2 : it.pts;
   const tone =
-    base === POINTS.exact
+    it.base === POINTS.exact
       ? "text-green-600 dark:text-green-400"
-      : base === POINTS.outcome
+      : it.base === POINTS.outcome
         ? "text-amber-600 dark:text-amber-400"
         : "text-red-600 dark:text-red-400";
   return (
@@ -63,9 +62,28 @@ function PredRow({ it }: { it: PredItem }) {
               90 min : {it.reg}
             </span>
           )}
+          {it.qualifier && (
+            <span
+              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                it.qualifier.correct
+                  ? "bg-amber-100 text-amber-700 dark:bg-amber-400/15 dark:text-amber-300"
+                  : "bg-neutral-100 text-neutral-500 line-through dark:bg-neutral-800"
+              }`}
+            >
+              {it.qualifier.flag} Qualifié : {it.qualifier.fr}
+              {it.qualifier.correct && " ✓"}
+            </span>
+          )}
         </p>
       </div>
-      <span className={`shrink-0 font-bold tabular-nums ${tone}`}>+{it.pts}</span>
+      <div className="shrink-0 text-right">
+        <span className={`font-bold tabular-nums ${tone}`}>+{it.pts}</span>
+        {it.qualifier?.correct && (
+          <p className="text-[10px] text-neutral-400 tabular-nums">
+            {it.base} + {it.pts - it.base}
+          </p>
+        )}
+      </div>
     </Link>
   );
 }
