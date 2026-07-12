@@ -17,6 +17,16 @@ export interface Announcement {
 
 export const ANNOUNCEMENTS: Announcement[] = [
   {
+    id: "community-details",
+    emoji: "🔎",
+    title: "Les pronos de la communauté en détail",
+    description:
+      "Sur la carte d'un match terminé, tu vois désormais le pronostic de chaque joueur : son score, son qualifié éventuel et les points gagnés. Compare tes paris à ceux des autres !",
+    href: "/calendrier",
+    cta: "Voir les matchs",
+    from: "2026-07-12T00:00:00+02:00",
+  },
+  {
     id: "prediction-game",
     emoji: "🔮",
     title: "Nouveau jeu : Prédiction",
