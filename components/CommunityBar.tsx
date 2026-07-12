@@ -1,4 +1,5 @@
-import type { CommunityStats } from "@/lib/community";
+import { POINTS } from "@/lib/predictions";
+import type { CommunityStats, CommunityPrediction } from "@/lib/community";
 
 /** Répartition des pronostics de la communauté — 3 cartes (domicile / nul / extérieur). */
 export function CommunityBar({
@@ -59,6 +60,52 @@ export function CommunityBar({
       <p className="mt-3 text-center text-xs text-neutral-400">
         {stats.total} pronostic{stats.total > 1 ? "s" : ""}
       </p>
+
+      {stats.predictions.length > 0 && (
+        <div className="mt-4 border-t border-neutral-200 pt-3 dark:border-neutral-800">
+          <p className="mb-2 text-xs font-semibold text-neutral-500">Le détail par joueur</p>
+          <ul className="space-y-1.5">
+            {stats.predictions.map((p, i) => (
+              <PlayerRow key={`${p.username}-${i}`} p={p} />
+            ))}
+          </ul>
+        </div>
+      )}
     </section>
+  );
+}
+
+/** Ligne d'un pronostic joueur (visible seulement une fois le match terminé). */
+function PlayerRow({ p }: { p: CommunityPrediction }) {
+  const tone =
+    p.base === POINTS.exact
+      ? "text-green-600 dark:text-green-400"
+      : p.base === POINTS.outcome
+        ? "text-amber-600 dark:text-amber-400"
+        : "text-red-600 dark:text-red-400";
+  return (
+    <li className="flex items-center gap-2 text-sm">
+      <span className="min-w-0 flex-1 truncate font-medium">{p.username}</span>
+      <span className="shrink-0 tabular-nums text-neutral-500">{p.pred}</span>
+      {p.boosted && (
+        <span className="shrink-0 rounded-full bg-emerald-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
+          ⚡ ×2
+        </span>
+      )}
+      {p.qualifier && (
+        <span
+          title={`Qualifié : ${p.qualifier.fr}`}
+          className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+            p.qualifier.correct
+              ? "bg-amber-100 text-amber-700 dark:bg-amber-400/15 dark:text-amber-300"
+              : "bg-neutral-100 text-neutral-500 line-through dark:bg-neutral-800"
+          }`}
+        >
+          {p.qualifier.flag}
+          {p.qualifier.correct && " ✓"}
+        </span>
+      )}
+      <span className={`w-9 shrink-0 text-right font-bold tabular-nums ${tone}`}>+{p.pts}</span>
+    </li>
   );
 }

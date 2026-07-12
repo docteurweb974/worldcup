@@ -39,7 +39,7 @@ export default async function MatchPage({ params }: { params: { id: string } }) 
 
   // Pronos de la communauté + résumé vidéo : uniquement pour un match terminé.
   const finished = isFinished(match.status);
-  const community = finished ? await getMatchCommunity(id) : null;
+  const community = finished ? await getMatchCommunity(match) : null;
   const video = finished ? await getStoredVideo(id) : null;
 
   return (
