@@ -167,39 +167,75 @@ function picksByUser(picks: (Pick & { user_id: string })[]) {
   return map;
 }
 
+export interface SurvivorOutcome {
+  winners: Set<string>; // vainqueur(s) du jeu
+  aliveIds: Set<string>; // participants encore en vie (inclut le vainqueur)
+  eliminatedRound: Map<string, string>; // id → tour d'élimination (clé de tour)
+  decided: boolean; // le jeu a un vainqueur
+}
+
+/**
+ * Déroule le Survivor tour par tour et détermine le résultat.
+ *
+ * Règle clé : dès qu'il ne reste qu'UN seul survivant (les autres éliminés), il
+ * est déclaré vainqueur — même s'il ne joue pas les tours suivants (inutile). On
+ * s'arrête donc à ce moment-là, ce qui évite de l'« éliminer » à tort pour un
+ * tour non joué.
+ */
+export function computeSurvivorOutcome(
+  participantIds: string[],
+  byUser: Map<string, Map<string, Pick>>,
+  matchById: Map<number, Match>,
+  roundClosed: (k: string) => boolean,
+): SurvivorOutcome {
+  const alive = new Set(participantIds);
+  const eliminatedRound = new Map<string, string>();
+  const multi = participantIds.length > 1;
+
+  for (const rk of SURVIVOR_ROUNDS) {
+    // Dernier survivant → jeu décidé, on n'exige plus de choix.
+    if (multi && alive.size <= 1) break;
+    for (const id of [...alive]) {
+      const pick = byUser.get(id)?.get(rk);
+      if (pick) {
+        const m = matchById.get(pick.match_id);
+        if (m && scored(m) && !teamWon(m, pick.team_id)) {
+          alive.delete(id);
+          eliminatedRound.set(id, rk);
+        }
+        // gagné ou match pas encore joué → reste en vie
+      } else if (roundClosed(rk)) {
+        // pas de choix sur un tour clôturé → éliminé
+        alive.delete(id);
+        eliminatedRound.set(id, rk);
+      }
+    }
+  }
+
+  const finalDone = roundClosed("FINAL");
+  let winners = new Set<string>();
+  if (multi && alive.size === 1) winners = new Set(alive); // dernier survivant
+  else if (finalDone && alive.size >= 1) winners = new Set(alive); // survivants après la finale
+  return { winners, aliveIds: alive, eliminatedRound, decided: winners.size > 0 };
+}
+
 /** Vainqueur(s) du Survivor : utilisé pour le bonus +10 pts au classement. */
 export async function getSurvivorWinners(): Promise<Set<string>> {
-  const result = new Set<string>();
   let data;
   try {
     data = await loadAll();
   } catch {
-    return result;
+    return new Set();
   }
   const { picks, profiles, matches } = data;
-  if (matches.length === 0) return result;
+  if (matches.length === 0) return new Set();
   const matchById = new Map(matches.map((m) => [m.id, m]));
   const roundClosed = buildRoundClosed(matches);
   const byUser = picksByUser(picks);
-
-  const statuses = profiles.map((p) => ({
-    id: p.id,
-    ...evaluate(byUser.get(p.id) ?? new Map(), matchById, roundClosed),
-  }));
   // Participant = a rejoint le Survivor à la Journée 1.
-  const participants = statuses.filter((s) => byUser.get(s.id)?.has("J1"));
-  if (participants.length === 0) return result;
-
-  const alive = participants.filter((s) => s.alive);
-  const finalDone = roundClosed("FINAL");
-
-  // Jeu décidé : la finale est jouée (les survivants gagnent), OU il ne reste qu'un seul en vie.
-  if (finalDone) {
-    alive.forEach((s) => result.add(s.id));
-  } else if (alive.length === 1 && participants.length > 1) {
-    result.add(alive[0].id);
-  }
-  return result;
+  const participantIds = profiles.filter((p) => byUser.get(p.id)?.has("J1")).map((p) => p.id);
+  if (participantIds.length === 0) return new Set();
+  return computeSurvivorOutcome(participantIds, byUser, matchById, roundClosed).winners;
 }
 
 /** Toutes les données nécessaires à la page Survivor pour un joueur donné. */
@@ -233,22 +269,34 @@ export async function getSurvivorData(viewerId: string): Promise<SurvivorData> {
   const nameById = new Map(profiles.map((p) => [p.id, p.username]));
   const now = Date.now();
 
-  // Statut des participants (= ceux ayant rejoint à la Journée 1).
-  const statuses = profiles
-    .filter((p) => byUser.get(p.id)?.has("J1"))
-    .map((p) => ({ id: p.id, ...evaluate(byUser.get(p.id) ?? new Map(), matchById, roundClosed) }));
-  const players: SurvivorPlayer[] = statuses
-    .map((s) => ({
-      username: nameById.get(s.id) ?? "Joueur",
-      alive: s.alive,
-      eliminatedLabel: s.eliminatedRound ? roundLabel(s.eliminatedRound) : null,
-    }))
+  // Résultat global du jeu (= source de vérité pour vivants/éliminés/vainqueurs).
+  const participantIds = profiles.filter((p) => byUser.get(p.id)?.has("J1")).map((p) => p.id);
+  const outcome = computeSurvivorOutcome(participantIds, byUser, matchById, roundClosed);
+
+  const players: SurvivorPlayer[] = participantIds
+    .map((id) => {
+      const alive = outcome.aliveIds.has(id);
+      const elimRk = outcome.eliminatedRound.get(id) ?? null;
+      return {
+        username: nameById.get(id) ?? "Joueur",
+        alive,
+        eliminatedLabel: elimRk ? roundLabel(elimRk) : null,
+      };
+    })
     .sort((a, b) => Number(b.alive) - Number(a.alive) || a.username.localeCompare(b.username));
   const aliveCount = players.filter((p) => p.alive).length;
 
   // Données propres au joueur.
   const myPicks = byUser.get(viewerId) ?? new Map<string, Pick>();
-  const myStatus = evaluate(myPicks, matchById, roundClosed);
+  const iWon = outcome.winners.has(viewerId);
+  const myAlive = outcome.aliveIds.has(viewerId);
+  // Le tour à jouer n'a de sens que si je suis en vie ET que le jeu n'est pas décidé.
+  const evalStatus = evaluate(myPicks, matchById, roundClosed);
+  const myStatus = {
+    alive: myAlive,
+    eliminatedRound: outcome.eliminatedRound.get(viewerId) ?? null,
+    currentRound: !outcome.decided && myAlive ? evalStatus.currentRound : null,
+  };
 
   // Parcours du joueur (un nœud par tour).
   let done = false;
@@ -276,7 +324,8 @@ export async function getSurvivorData(viewerId: string): Promise<SurvivorData> {
     }
     if (roundClosed(rk)) {
       done = true;
-      return { key: rk, label, state: "missed" };
+      // Vainqueur (dernier survivant) : il n'avait pas besoin de jouer ce tour.
+      return { key: rk, label, state: iWon ? "locked" : "missed" };
     }
     done = true;
     return { key: rk, label, state: "current" };
@@ -312,9 +361,7 @@ export async function getSurvivorData(viewerId: string): Promise<SurvivorData> {
     .filter((p) => p.round_key !== currentRoundKey)
     .map((p) => p.team_id);
 
-  const winnerIds = await getSurvivorWinners();
-  const winners = [...winnerIds].map((id) => nameById.get(id) ?? "Joueur");
-  const iWon = winnerIds.has(viewerId);
+  const winners = [...outcome.winners].map((id) => nameById.get(id) ?? "Joueur");
 
   return {
     rounds,
