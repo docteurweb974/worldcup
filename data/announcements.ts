@@ -21,7 +21,7 @@ export const ANNOUNCEMENTS: Announcement[] = [
     emoji: "🏆",
     title: "La finale : points doublés + paris bonus !",
     description:
-      "Sur la grande finale, tous tes points comptent DOUBLE (score exact 10 pts, bon résultat 4 pts). Et 4 paris bonus t'attendent (mi-temps la plus prolifique, +/- 2,5 buts, les deux équipes marquent, résultat à la mi-temps) : +3 pts chacun. Ne les rate pas avant le coup d'envoi !",
+      "Sur la grande finale, tous tes points comptent DOUBLE. Et 4 paris bonus t'attendent ! Ne les rate pas avant le coup d'envoi.",
     href: "/pronos",
     cta: "Jouer la finale 🏆",
     from: "2026-07-19T00:00:00+02:00",
