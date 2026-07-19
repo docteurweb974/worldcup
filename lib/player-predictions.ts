@@ -2,7 +2,7 @@ import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getResilientMatches } from "@/lib/results";
 import { getUserBoosts } from "@/lib/boosts";
-import { predictionPoints, qualifierBonus, type Qualifier } from "@/lib/predictions";
+import { predictionPoints, qualifierBonus, pointsMultiplier, type Qualifier } from "@/lib/predictions";
 import { isFinished, matchScore, type Match } from "@/lib/api";
 import { displayTeam } from "@/data/teams";
 
@@ -17,10 +17,12 @@ export interface PredItem {
   aet: boolean; // décidé en prolongation (sans TAB)
   reg: string | null; // score à 90' « 1-1 » si le match est allé au-delà
   pred: string;
-  base: number; // points du score seul (hors Boost et bonus qualifié)
-  pts: number;
+  base: number; // points du score seul (hors Boost, bonus qualifié et ×2 finale)
+  qualPts: number; // bonus qualifié seul (0 ou 2, avant ×2 finale)
+  pts: number; // total réellement gagné (Boost, qualifié et ×2 finale inclus)
   qualifier: { flag: string; fr: string; correct: boolean } | null; // qualifié choisi (nul 8es+)
   boosted: boolean;
+  isFinal: boolean; // finale → points comptés double
   utcDate: string;
 }
 
@@ -91,7 +93,8 @@ export async function getFinishedPredictionsByRound(userId: string): Promise<Pre
       reg: reg?.home != null ? `${reg.home}-${reg.away}` : null,
       pred: `${p.home}-${p.away}`,
       base,
-      pts: (isB ? base * 2 : base) + bonus,
+      qualPts: bonus,
+      pts: ((isB ? base * 2 : base) + bonus) * pointsMultiplier(m.stage),
       qualifier: qualifier
         ? {
             flag: qualifier === "home" ? home.flag : away.flag,
@@ -100,6 +103,7 @@ export async function getFinishedPredictionsByRound(userId: string): Promise<Pre
           }
         : null,
       boosted: isB,
+      isFinal: m.stage === "FINAL",
       utcDate: m.utcDate,
     };
     const { key, label } = roundInfo(m);

@@ -29,6 +29,7 @@ export interface ResultHeroData {
   stage: string;
   date: string;
   prediction: { home: number; away: number; base: number; points: number } | null;
+  isFinal?: boolean; // finale → points comptés double
   backHref?: string;
 }
 
@@ -43,6 +44,7 @@ export function ResultHero({
   stage,
   date,
   prediction,
+  isFinal = false,
   backHref = "/calendrier",
 }: ResultHeroData) {
   const show90 = (aet || pens) && reg != null;
@@ -140,6 +142,11 @@ export function ResultHero({
             </span>
           </div>
           <p className="mt-1 text-[11px] font-semibold text-white/70">{predMsg}</p>
+          {isFinal && (
+            <p className="mt-1 text-[10px] font-bold uppercase tracking-wide text-violet-300">
+              🏆 Finale · points ×2
+            </p>
+          )}
         </div>
       )}
     </StadiumHero>

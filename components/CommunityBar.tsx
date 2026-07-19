@@ -63,7 +63,14 @@ export function CommunityBar({
 
       {stats.predictions.length > 0 && (
         <div className="mt-4 border-t border-neutral-200 pt-3 dark:border-neutral-800">
-          <p className="mb-2 text-xs font-semibold text-neutral-500">Le détail par joueur</p>
+          <p className="mb-2 flex items-center gap-2 text-xs font-semibold text-neutral-500">
+            Le détail par joueur
+            {stats.predictions.some((p) => p.isFinal) && (
+              <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold text-violet-700 dark:bg-violet-400/15 dark:text-violet-300">
+                🏆 Finale ×2
+              </span>
+            )}
+          </p>
           <ul className="space-y-1.5">
             {stats.predictions.map((p, i) => (
               <PlayerRow key={`${p.username}-${i}`} p={p} />

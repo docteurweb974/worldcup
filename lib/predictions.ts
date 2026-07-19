@@ -19,6 +19,11 @@ export const POINTS = {
   qualifier: 2, // bonus : bon qualifié sur un nul à 90' (8es+)
 } as const;
 
+/** La finale compte double : multiplicateur appliqué au total de points du match. */
+export function pointsMultiplier(stage: string): number {
+  return stage === "FINAL" ? 2 : 1;
+}
+
 /** Tours où l'option « choisir le qualifié » s'applique : à partir des 8es. */
 const QUALIFIER_STAGES = new Set([
   "LAST_16",

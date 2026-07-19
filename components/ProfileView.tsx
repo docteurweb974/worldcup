@@ -122,6 +122,15 @@ export function ProfileView({
                     </span>
                   </div>
                 )}
+                {stats.breakdown.finalBets > 0 && (
+                  <div className="flex items-center gap-2">
+                    <span aria-hidden="true">🎁</span>
+                    <span className="text-neutral-500">
+                      Paris bonus finale{" "}
+                      <span className="font-bold text-accent">+{stats.breakdown.finalBets}pts</span>
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 

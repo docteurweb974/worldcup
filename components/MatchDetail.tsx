@@ -18,6 +18,7 @@ import {
   predictionPoints,
   qualifierBonus,
   hasQualifierOption,
+  pointsMultiplier,
   type ScorePrediction,
   type Qualifier,
 } from "@/lib/predictions";
@@ -69,7 +70,8 @@ export function MatchDetail({
       ? (() => {
           const base = predictionPoints(prediction, match) ?? 0;
           const bonus = qualifierBonus(prediction, match);
-          return { home: prediction.home, away: prediction.away, base, points: base + bonus };
+          const points = (base + bonus) * pointsMultiplier(match.stage);
+          return { home: prediction.home, away: prediction.away, base, points };
         })()
       : null;
   const reg = match.score.regularTime;
@@ -100,6 +102,7 @@ export function MatchDetail({
           stage={stageLabel(match.stage, match.group)}
           date={formatFull(match.utcDate, timezone)}
           prediction={predResult}
+          isFinal={match.stage === "FINAL"}
         />
       )}
 
@@ -223,6 +226,11 @@ export function MatchDetail({
                 </button>
                 <p className="text-center text-xs text-white/50">
                   Score exact : {POINTS.exact} pts · bon résultat : {POINTS.outcome} pts.
+                  {match.stage === "FINAL" && (
+                    <span className="mt-1 block font-semibold text-violet-300">
+                      🏆 Finale : tous tes points comptent double !
+                    </span>
+                  )}
                 </p>
               </div>
             ) : (

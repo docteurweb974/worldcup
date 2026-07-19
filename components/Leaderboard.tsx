@@ -69,6 +69,14 @@ export function Leaderboard({
                     🔮 Prédiction +{e.championBonus} pts
                   </span>
                 )}
+                {e.finalBetsBonus > 0 && (
+                  <span
+                    title={`Paris bonus de la finale : +${e.finalBetsBonus} pts`}
+                    className="shrink-0 rounded-full bg-pink-100 px-1.5 py-0.5 text-[10px] font-bold text-pink-700 dark:bg-pink-400/15 dark:text-pink-300"
+                  >
+                    🎁 Finale +{e.finalBetsBonus} pts
+                  </span>
+                )}
               </div>
               <div className="shrink-0 text-right">
                 <span className="font-bold tabular-nums text-accent">{e.points} pts</span>

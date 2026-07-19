@@ -2,8 +2,10 @@ import { getResilientMatch } from "@/lib/results";
 import { isFinished } from "@/lib/api";
 import { createClient } from "@/lib/supabase/server";
 import { getMatchCommunity } from "@/lib/community";
+import { getFinalBetsData } from "@/lib/final-bets";
 import { getStoredVideo } from "@/lib/videos";
 import { MatchDetail } from "@/components/MatchDetail";
+import { FinalBets } from "@/components/FinalBets";
 import { MatchHighlights } from "@/components/MatchHighlights";
 import { PagePlaceholder } from "@/components/PagePlaceholder";
 import type { ScorePrediction } from "@/lib/predictions";
@@ -41,6 +43,8 @@ export default async function MatchPage({ params }: { params: { id: string } }) 
   const finished = isFinished(match.status);
   const community = finished ? await getMatchCommunity(match) : null;
   const video = finished ? await getStoredVideo(id) : null;
+  // Paris bonus : uniquement sur la finale.
+  const finalBets = match.stage === "FINAL" ? await getFinalBetsData(user?.id ?? null) : null;
 
   return (
     <>
@@ -50,6 +54,11 @@ export default async function MatchPage({ params }: { params: { id: string } }) 
         isLoggedIn={!!user}
         community={community}
       />
+      {finalBets && (
+        <div className="mx-auto max-w-xl px-4 pb-4">
+          <FinalBets data={finalBets} isLoggedIn={!!user} />
+        </div>
+      )}
       {video && <MatchHighlights youtubeId={video.youtube_id} title={video.title} />}
     </>
   );

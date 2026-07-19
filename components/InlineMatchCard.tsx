@@ -11,6 +11,7 @@ import {
   predictionPoints,
   qualifierBonus,
   hasQualifierOption,
+  pointsMultiplier,
   type ScorePrediction,
   type Qualifier,
 } from "@/lib/predictions";
@@ -73,7 +74,7 @@ export function InlineMatchCard({
     const hasResult = ds.home != null && ds.away != null;
     const base = prediction && hasResult ? predictionPoints(prediction, match) ?? 0 : null;
     const bonus = prediction ? qualifierBonus(prediction, match) : 0;
-    const pts = base != null ? (isBoost ? base * 2 : base) + bonus : null;
+    const pts = base != null ? ((isBoost ? base * 2 : base) + bonus) * pointsMultiplier(match.stage) : null;
     const tone =
       base === POINTS.exact
         ? "text-green-600 dark:text-green-400"
@@ -91,6 +92,7 @@ export function InlineMatchCard({
           <span className="capitalize">
             {match.group ? formatGroup(match.group) : match.stage.replaceAll("_", " ").toLowerCase()}
             {isBoost && <span className="ml-1 font-semibold text-emerald-600 dark:text-emerald-400">· ⚡ Boost</span>}
+            {match.stage === "FINAL" && <span className="ml-1 font-semibold text-violet-600 dark:text-violet-400">· 🏆 ×2</span>}
           </span>
           <span className="tabular-nums">{formatFull(match.utcDate, timezone)}</span>
         </div>
@@ -149,6 +151,14 @@ export function InlineMatchCard({
                 <path d="M9 2h6" />
               </svg>
               90 min
+            </span>
+          )}
+          {match.stage === "FINAL" && (
+            <span
+              title="La finale compte double : tous tes points sur ce match sont multipliés par 2"
+              className="inline-flex items-center gap-1 rounded-full bg-violet-100 px-2 py-0.5 text-[11px] font-semibold normal-case text-violet-700 dark:bg-violet-400/15 dark:text-violet-300"
+            >
+              🏆 Finale ×2
             </span>
           )}
         </span>

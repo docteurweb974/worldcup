@@ -2,15 +2,23 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getAllBoosts } from "@/lib/boosts";
 import { isFinished, type Match } from "@/lib/api";
 import { displayTeam } from "@/data/teams";
-import { outcomeOfScore, predictionPoints, qualifierBonus, type Qualifier } from "@/lib/predictions";
+import {
+  outcomeOfScore,
+  predictionPoints,
+  qualifierBonus,
+  pointsMultiplier,
+  type Qualifier,
+} from "@/lib/predictions";
 
 export interface CommunityPrediction {
   username: string;
   pred: string; // « 1-1 »
-  base: number; // points du score seul (hors Boost et bonus qualifié)
-  pts: number; // points totaux gagnés sur ce match
+  base: number; // points du score seul (hors Boost, bonus qualifié et ×2 finale)
+  qualPts: number; // bonus qualifié seul (0 ou 2, avant ×2 finale)
+  pts: number; // points totaux gagnés (Boost, qualifié et ×2 finale inclus)
   qualifier: { flag: string; fr: string; correct: boolean } | null; // qualifié choisi (nul 8es+)
   boosted: boolean;
+  isFinal: boolean; // finale → points comptés double
 }
 
 export interface CommunityStats {
@@ -59,7 +67,8 @@ export async function getMatchCommunity(match: Match): Promise<CommunityStats | 
       username: nameById.get(p.user_id) ?? "Joueur",
       pred: `${p.home}-${p.away}`,
       base,
-      pts: (isB ? base * 2 : base) + bonus,
+      qualPts: bonus,
+      pts: ((isB ? base * 2 : base) + bonus) * pointsMultiplier(match.stage),
       qualifier: qualifier
         ? {
             flag: qualifier === "home" ? home.flag : away.flag,
@@ -68,6 +77,7 @@ export async function getMatchCommunity(match: Match): Promise<CommunityStats | 
           }
         : null,
       boosted: isB,
+      isFinal: match.stage === "FINAL",
     });
   }
 

@@ -74,13 +74,19 @@ function PredRow({ it }: { it: PredItem }) {
               {it.qualifier.correct && " ✓"}
             </span>
           )}
+          {it.isFinal && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-violet-100 px-2 py-0.5 text-[11px] font-semibold text-violet-700 dark:bg-violet-400/15 dark:text-violet-300">
+              🏆 Finale ×2
+            </span>
+          )}
         </p>
       </div>
       <div className="shrink-0 text-right">
         <span className={`font-bold tabular-nums ${tone}`}>+{it.pts}</span>
-        {it.qualifier?.correct && (
+        {(it.qualifier?.correct || (it.isFinal && it.base > 0)) && (
           <p className="text-[10px] text-neutral-400 tabular-nums">
-            {it.base} + {it.pts - it.base}
+            {it.qualPts > 0 ? `(${it.base} + ${it.qualPts})` : it.base}
+            {it.isFinal ? " ×2" : ""}
           </p>
         )}
       </div>

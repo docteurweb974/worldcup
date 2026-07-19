@@ -135,6 +135,23 @@ async function upsertSurvivorPick(roundKey, matchId, teamId) {
     body: JSON.stringify([{ user_id: BOT_ID, round_key: roundKey, match_id: matchId, team_id: teamId }]),
   });
 }
+async function existingFinalBets() {
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/final_bets?user_id=eq.${BOT_ID}&select=user_id`,
+    { headers: sbHeaders },
+  );
+  if (!res.ok) return null;
+  const rows = await res.json();
+  return rows[0] ?? null;
+}
+async function upsertFinalBets(bets) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/final_bets`, {
+    method: "POST",
+    headers: { ...sbHeaders, Prefer: "resolution=merge-duplicates,return=minimal" },
+    body: JSON.stringify([{ user_id: BOT_ID, ...bets }]),
+  });
+  if (!res.ok) console.error(`final_bets upsert ${res.status} : ${await res.text()}`);
+}
 async function existingChampionPick() {
   const res = await fetch(
     `${SUPABASE_URL}/rest/v1/champion_picks?user_id=eq.${BOT_ID}&select=team_id,finalist_id`,
@@ -338,6 +355,38 @@ async function main() {
   await placeBoosts(matches, now);
   await placeSurvivorPick(matches, now);
   await placeChampionPick(matches, standings, now);
+  await placeFinalBets(matches, now);
+}
+
+/**
+ * Paris bonus de la FINALE, déduits du prono de score du bot sur la finale.
+ * Posés une seule fois, tant que la finale n'a pas commencé.
+ */
+async function placeFinalBets(matches, now) {
+  const final = matches.find(
+    (m) => m.stage === "FINAL" && m.homeTeam.id != null && m.awayTeam.id != null,
+  );
+  if (!final) return; // finale pas encore fixée
+  if (new Date(final.utcDate).getTime() <= now) return; // commencée → verrouillé
+
+  const existing = await existingFinalBets().catch(() => null);
+  if (existing) return; // déjà joué
+
+  const preds = await allBotPredictions().catch(() => []);
+  const p = preds.find((x) => x.match_id === final.id);
+  if (!p) return; // le bot n'a pas encore pronostiqué la finale
+
+  const total = p.home + p.away;
+  const bets = {
+    half: "second", // heuristique : souvent plus de buts en 2e période
+    over_under: total >= 3 ? "over" : "under",
+    btts: p.home > 0 && p.away > 0 ? "yes" : "no",
+    ht_result: p.home > p.away ? "home" : p.home < p.away ? "away" : "draw",
+  };
+  await upsertFinalBets(bets);
+  console.log(
+    `  🎁 Paris finale → MT2 · ${bets.over_under} · BTTS ${bets.btts} · mi-temps ${bets.ht_result}`,
+  );
 }
 
 // Moitié du bracket (« L »/« R ») : 8es triés par id, floor(i/2) pair = gauche.

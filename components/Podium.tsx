@@ -58,6 +58,11 @@ function Spot({
             🔮 Prédiction +{entry.championBonus} pts
           </span>
         )}
+        {entry.finalBetsBonus > 0 && (
+          <span className="mt-1 rounded-full bg-pink-400/20 px-1.5 py-0.5 text-[10px] font-bold text-pink-200">
+            🎁 Finale +{entry.finalBetsBonus} pts
+          </span>
+        )}
       </Link>
       {/* Marche du podium */}
       <div

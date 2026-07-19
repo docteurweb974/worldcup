@@ -19,6 +19,7 @@ export interface PlayerStats {
     qualifier: number; // bonus « qualifié » (8es+)
     survivor: number; // bonus Survivor (+10)
     champion: number; // bonus Prédiction (finale)
+    finalBets: number; // bonus paris de la finale
   };
 }
 

@@ -4,7 +4,8 @@ import { getResilientMatches } from "@/lib/results";
 import { getAllBoosts } from "@/lib/boosts";
 import { getSurvivorWinners } from "@/lib/survivor";
 import { getChampionBonuses } from "@/lib/champion";
-import { POINTS, predictionPoints, qualifierBonus, type Qualifier } from "@/lib/predictions";
+import { getFinalBetsBonuses } from "@/lib/final-bets";
+import { POINTS, predictionPoints, qualifierBonus, pointsMultiplier, type Qualifier } from "@/lib/predictions";
 
 const SURVIVOR_BONUS = 10;
 
@@ -19,6 +20,7 @@ export interface LeaderboardEntry {
   favoriteTla: string | null;
   survivorBonus: number; // bonus Survivor inclus dans les points (0 si aucun)
   championBonus: number; // bonus Prédiction (finale) inclus dans les points (0 si aucun)
+  finalBetsBonus: number; // bonus paris de la finale inclus dans les points (0 si aucun)
 }
 
 /**
@@ -39,14 +41,21 @@ export const getLeaderboard = cache(async (): Promise<LeaderboardEntry[]> => {
     return [];
   }
 
-  const [{ data: preds }, { data: profiles }, boosts, survivorWinners, championBonuses] =
-    await Promise.all([
-      admin.from("predictions").select("*"),
-      admin.from("profiles").select("id, username, favorite_team"),
-      getAllBoosts(),
-      getSurvivorWinners(),
-      getChampionBonuses(),
-    ]);
+  const [
+    { data: preds },
+    { data: profiles },
+    boosts,
+    survivorWinners,
+    championBonuses,
+    finalBetsBonuses,
+  ] = await Promise.all([
+    admin.from("predictions").select("*"),
+    admin.from("profiles").select("id, username, favorite_team"),
+    getAllBoosts(),
+    getSurvivorWinners(),
+    getChampionBonuses(),
+    getFinalBetsBonuses(),
+  ]);
 
   let matchesById = new Map<number, Awaited<ReturnType<typeof getResilientMatches>>[number]>();
   try {
@@ -69,7 +78,7 @@ export const getLeaderboard = cache(async (): Promise<LeaderboardEntry[]> => {
       match,
     );
     const cur = agg.get(p.user_id) ?? { points: 0, exact: 0, good: 0, played: 0 };
-    cur.points += (boosted ? base * 2 : base) + bonus;
+    cur.points += ((boosted ? base * 2 : base) + bonus) * pointsMultiplier(match.stage);
     if (base === POINTS.exact) cur.exact += 1;
     else if (base === POINTS.outcome) cur.good += 1;
     cur.played += 1;
@@ -81,16 +90,18 @@ export const getLeaderboard = cache(async (): Promise<LeaderboardEntry[]> => {
     const a = agg.get(prof.id) ?? { points: 0, exact: 0, good: 0, played: 0 };
     const survivorBonus = survivorWinners.has(prof.id) ? SURVIVOR_BONUS : 0;
     const championBonus = championBonuses.get(prof.id) ?? 0;
+    const finalBetsBonus = finalBetsBonuses.get(prof.id) ?? 0;
     return {
       userId: prof.id,
       username: prof.username,
-      points: a.points + survivorBonus + championBonus,
+      points: a.points + survivorBonus + championBonus + finalBetsBonus,
       exact: a.exact,
       good: a.good,
       played: a.played,
       favoriteTla: (prof as { favorite_team?: string | null }).favorite_team ?? null,
       survivorBonus,
       championBonus,
+      finalBetsBonus,
     };
   });
 
