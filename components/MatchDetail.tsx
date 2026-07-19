@@ -7,7 +7,9 @@ import { usePreferences } from "./PreferencesProvider";
 import { ScorePicker } from "./ScorePicker";
 import { IcsButton } from "./IcsButton";
 import { CommunityBar } from "./CommunityBar";
+import { FinalBets } from "./FinalBets";
 import type { CommunityStats } from "@/lib/community";
+import type { FinalBetsData } from "@/lib/final-bets";
 import { savePrediction } from "@/app/predictions/actions";
 import { formatFull } from "@/lib/timezone";
 import { calendarFilename } from "@/lib/ics";
@@ -30,11 +32,13 @@ export function MatchDetail({
   prediction,
   isLoggedIn,
   community,
+  finalBets,
 }: {
   match: Match;
   prediction: ScorePrediction | null;
   isLoggedIn: boolean;
   community: CommunityStats | null;
+  finalBets?: FinalBetsData | null;
 }) {
   const { timezone } = usePreferences();
   const router = useRouter();
@@ -225,10 +229,11 @@ export function MatchDetail({
                       : "✓ Pronostic enregistré"}
                 </button>
                 <p className="text-center text-xs text-white/50">
-                  Score exact : {POINTS.exact} pts · bon résultat : {POINTS.outcome} pts.
+                  Score exact : {POINTS.exact * pointsMultiplier(match.stage)} pts · bon résultat :{" "}
+                  {POINTS.outcome * pointsMultiplier(match.stage)} pts.
                   {match.stage === "FINAL" && (
                     <span className="mt-1 block font-semibold text-violet-300">
-                      🏆 Finale : tous tes points comptent double !
+                      🏆 Finale : points doublés !
                     </span>
                   )}
                 </p>
@@ -240,6 +245,13 @@ export function MatchDetail({
               </p>
             )}
           </div>
+
+          {/* Paris bonus de la finale — directement dans le hero */}
+          {match.stage === "FINAL" && finalBets?.available && (
+            <div className="mt-4">
+              <FinalBets data={finalBets} isLoggedIn={isLoggedIn} variant="glass" />
+            </div>
+          )}
 
           {/* Ajouter au calendrier — à l'intérieur du hero */}
           <div className="mt-4 flex justify-center">

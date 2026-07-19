@@ -53,8 +53,10 @@ export default async function MatchPage({ params }: { params: { id: string } }) 
         prediction={prediction}
         isLoggedIn={!!user}
         community={community}
+        finalBets={finalBets}
       />
-      {finalBets && (
+      {/* Match terminé : le hero devient ResultHero, on montre les résultats des paris ici. */}
+      {finalBets && finished && (
         <div className="mx-auto max-w-xl px-4 pb-4">
           <FinalBets data={finalBets} isLoggedIn={!!user} />
         </div>

@@ -15,7 +15,7 @@ import type {
 
 const FINAL_BET_POINTS = 3; // aligné sur lib/final-bets (module server-only)
 
-type Team = { flag: string; fr: string };
+type Variant = "card" | "glass";
 
 /** Bloc d'un pari bonus : titre + pastille +3 + options en boutons. */
 function BonusBlock<T extends string>({
@@ -28,6 +28,7 @@ function BonusBlock<T extends string>({
   disabled,
   actual,
   cols = 3,
+  glass = false,
 }: {
   emoji: string;
   title: string;
@@ -38,32 +39,54 @@ function BonusBlock<T extends string>({
   disabled?: boolean;
   actual?: T | null; // issue réelle (mode résultat)
   cols?: 2 | 3;
+  glass?: boolean;
 }) {
   const resolved = actual != null;
   return (
-    <div className="rounded-xl border border-neutral-200 p-3 dark:border-neutral-800">
+    <div
+      className={`rounded-xl border p-3 ${
+        glass ? "border-white/15 bg-white/5" : "border-neutral-200 dark:border-neutral-800"
+      }`}
+    >
       <div className="mb-2 flex items-center gap-2">
         <span className="text-base">{emoji}</span>
-        <p className="text-sm font-semibold">{title}</p>
-        <span className="ml-auto rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-bold text-amber-700 dark:bg-amber-400/15 dark:text-amber-300">
+        <p className={`text-sm font-semibold ${glass ? "text-white" : ""}`}>{title}</p>
+        <span
+          className={`ml-auto rounded-full px-2 py-0.5 text-[11px] font-bold ${
+            glass
+              ? "bg-amber-400/20 text-amber-200"
+              : "bg-amber-100 text-amber-700 dark:bg-amber-400/15 dark:text-amber-300"
+          }`}
+        >
           +{FINAL_BET_POINTS} pts
         </span>
       </div>
-      {hint && !resolved && <p className="mb-2 text-xs text-neutral-400">{hint}</p>}
+      {hint && !resolved && (
+        <p className={`mb-2 text-xs ${glass ? "text-white/50" : "text-neutral-400"}`}>{hint}</p>
+      )}
       <div className={`grid gap-2 ${cols === 2 ? "grid-cols-2" : "grid-cols-3"}`}>
         {options.map((o) => {
           const picked = value === o.key;
           const isActual = actual === o.key;
-          // Couleurs en mode résultat : bon pari (vert), pari raté (rouge), issue réelle (contour vert).
-          let cls =
-            "border-neutral-300 bg-white hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-900 dark:hover:bg-neutral-800";
+          let cls = glass
+            ? "border-white/20 bg-white/5 text-white hover:bg-white/10"
+            : "border-neutral-300 bg-white hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-900 dark:hover:bg-neutral-800";
           if (resolved) {
-            if (picked && isActual) cls = "border-green-500 bg-green-50 text-green-700 dark:bg-green-500/10 dark:text-green-300";
-            else if (picked && !isActual) cls = "border-red-400 bg-red-50 text-red-600 line-through dark:bg-red-500/10 dark:text-red-300";
-            else if (isActual) cls = "border-green-500 text-green-700 dark:text-green-300";
-            else cls = "border-neutral-200 text-neutral-400 dark:border-neutral-800";
+            if (picked && isActual)
+              cls = glass
+                ? "border-green-400 bg-green-500/20 text-green-200"
+                : "border-green-500 bg-green-50 text-green-700 dark:bg-green-500/10 dark:text-green-300";
+            else if (picked && !isActual)
+              cls = glass
+                ? "border-red-400 bg-red-500/20 text-red-200 line-through"
+                : "border-red-400 bg-red-50 text-red-600 line-through dark:bg-red-500/10 dark:text-red-300";
+            else if (isActual)
+              cls = glass ? "border-green-400 text-green-200" : "border-green-500 text-green-700 dark:text-green-300";
+            else cls = glass ? "border-white/10 text-white/40" : "border-neutral-200 text-neutral-400 dark:border-neutral-800";
           } else if (picked) {
-            cls = "border-accent bg-accent text-white";
+            cls = glass
+              ? "border-amber-300 bg-amber-400 text-neutral-900"
+              : "border-accent bg-accent text-white";
           }
           return (
             <button
@@ -84,9 +107,18 @@ function BonusBlock<T extends string>({
   );
 }
 
-export function FinalBets({ data, isLoggedIn }: { data: FinalBetsData; isLoggedIn: boolean }) {
+export function FinalBets({
+  data,
+  isLoggedIn,
+  variant = "card",
+}: {
+  data: FinalBetsData;
+  isLoggedIn: boolean;
+  variant?: Variant;
+}) {
   const router = useRouter();
   const { home, away } = data;
+  const g = variant === "glass";
 
   const [half, setHalf] = useState<Half | null>(data.myBets.half);
   const [ou, setOu] = useState<OverUnder | null>(data.myBets.overUnder);
@@ -141,18 +173,30 @@ export function FinalBets({ data, isLoggedIn }: { data: FinalBetsData; isLoggedI
     ht !== data.myBets.htResult;
 
   return (
-    <section className="mx-auto max-w-xl rounded-2xl border border-neutral-200 p-4 dark:border-neutral-800">
+    <section
+      className={
+        g
+          ? "rounded-2xl border border-white/15 bg-black/20 p-4"
+          : "mx-auto max-w-xl rounded-2xl border border-neutral-200 p-4 dark:border-neutral-800"
+      }
+    >
       <div className="mb-1 flex items-center justify-between">
-        <h2 className="font-bold">Paris bonus de la finale 🎁</h2>
+        <h2 className={`font-bold ${g ? "text-white" : ""}`}>Paris bonus de la finale 🎁</h2>
         {resolved ? (
-          <span className="rounded-full bg-violet-100 px-2 py-0.5 text-xs font-bold text-violet-700 dark:bg-violet-400/15 dark:text-violet-300">
+          <span
+            className={`rounded-full px-2 py-0.5 text-xs font-bold ${
+              g ? "bg-violet-400/25 text-violet-100" : "bg-violet-100 text-violet-700 dark:bg-violet-400/15 dark:text-violet-300"
+            }`}
+          >
             +{data.myPoints ?? 0} pts
           </span>
         ) : (
-          <span className="text-xs text-neutral-400">{bonusCount}/4 · jusqu’à +12 pts</span>
+          <span className={`text-xs ${g ? "text-white/50" : "text-neutral-400"}`}>
+            {bonusCount}/4 · jusqu’à +12 pts
+          </span>
         )}
       </div>
-      <p className="mb-3 text-xs text-neutral-500">
+      <p className={`mb-3 text-xs ${g ? "text-white/60" : "text-neutral-500"}`}>
         {resolved
           ? "Résultat de tes paris bonus (jugés sur le score à la mi-temps et à 90')."
           : "4 paris facultatifs, +3 pts chacun. En plus de ton pronostic de score."}
@@ -161,7 +205,9 @@ export function FinalBets({ data, isLoggedIn }: { data: FinalBetsData; isLoggedI
       {!resolved && !isLoggedIn && (
         <Link
           href="/connexion"
-          className="mb-3 block rounded-xl border border-dashed border-neutral-300 p-4 text-center text-sm dark:border-neutral-700"
+          className={`mb-3 block rounded-xl border border-dashed p-4 text-center text-sm ${
+            g ? "border-white/30 text-white/90" : "border-neutral-300 dark:border-neutral-700"
+          }`}
         >
           Connecte-toi pour jouer les paris bonus.
         </Link>
@@ -177,6 +223,7 @@ export function FinalBets({ data, isLoggedIn }: { data: FinalBetsData; isLoggedI
           onChange={setHalf}
           disabled={!editable}
           actual={resolved ? data.outcomes!.half : undefined}
+          glass={g}
         />
         <BonusBlock
           emoji="🎯"
@@ -187,6 +234,7 @@ export function FinalBets({ data, isLoggedIn }: { data: FinalBetsData; isLoggedI
           disabled={!editable}
           actual={resolved ? data.outcomes!.overUnder : undefined}
           cols={2}
+          glass={g}
         />
         <BonusBlock
           emoji="🤝"
@@ -197,6 +245,7 @@ export function FinalBets({ data, isLoggedIn }: { data: FinalBetsData; isLoggedI
           disabled={!editable}
           actual={resolved ? data.outcomes!.btts : undefined}
           cols={2}
+          glass={g}
         />
         <BonusBlock
           emoji="⏱️"
@@ -206,11 +255,12 @@ export function FinalBets({ data, isLoggedIn }: { data: FinalBetsData; isLoggedI
           onChange={setHt}
           disabled={!editable}
           actual={resolved ? data.outcomes!.htResult : undefined}
+          glass={g}
         />
       </div>
 
       {!resolved && data.locked && (
-        <p className="mt-3 text-center text-xs text-neutral-400">
+        <p className={`mt-3 text-center text-xs ${g ? "text-white/50" : "text-neutral-400"}`}>
           🔒 La finale a commencé — paris verrouillés.
         </p>
       )}
@@ -218,7 +268,7 @@ export function FinalBets({ data, isLoggedIn }: { data: FinalBetsData; isLoggedI
       {editable && (
         <>
           {error && (
-            <p role="alert" className="mt-2 text-center text-sm text-red-600 dark:text-red-400">
+            <p role="alert" className={`mt-2 text-center text-sm ${g ? "text-red-300" : "text-red-600 dark:text-red-400"}`}>
               {error}
             </p>
           )}
