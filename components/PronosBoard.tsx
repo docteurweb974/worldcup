@@ -4,8 +4,10 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { usePreferences } from "./PreferencesProvider";
 import { InlineMatchCard } from "./InlineMatchCard";
+import { FinalBets } from "./FinalBets";
 import { CountUp } from "./CountUp";
 import { BaremeCard } from "./BaremeCard";
+import type { FinalBetsData } from "@/lib/final-bets";
 import { savePrediction, setBoost, clearBoost } from "@/app/predictions/actions";
 import { formatFull } from "@/lib/timezone";
 import { displayTeam } from "@/data/teams";
@@ -44,10 +46,12 @@ export function PronosBoard({
   matches,
   initialPredictions,
   initialBoosts = {},
+  finalBets = null,
 }: {
   matches: Match[];
   initialPredictions: DbPrediction[];
   initialBoosts?: Record<string, number>;
+  finalBets?: FinalBetsData | null;
 }) {
   const { timezone } = usePreferences();
   const [preds, setPreds] = useState<Map<number, ScorePrediction>>(
@@ -250,6 +254,9 @@ export function PronosBoard({
                               }
                             />
                           ))}
+                          {round.key === "FINAL" && finalBets?.available && (
+                            <FinalBets data={finalBets} isLoggedIn />
+                          )}
                         </div>
                       </div>
                     </div>

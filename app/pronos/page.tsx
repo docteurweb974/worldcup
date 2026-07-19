@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getResilientMatches } from "@/lib/results";
 import { createClient } from "@/lib/supabase/server";
 import { getUserBoosts } from "@/lib/boosts";
+import { getFinalBetsData } from "@/lib/final-bets";
 import { PronosBoard, type DbPrediction } from "@/components/PronosBoard";
 import { ImportLocalPredictions } from "@/components/ImportLocalPredictions";
 import { LivePointsRefresher } from "@/components/LivePointsRefresher";
@@ -31,10 +32,11 @@ export default async function PronosPage() {
     );
   }
 
-  const [{ data: preds }, matches, boosts] = await Promise.all([
+  const [{ data: preds }, matches, boosts, finalBets] = await Promise.all([
     supabase.from("predictions").select("*").eq("user_id", user.id),
     getResilientMatches(),
     getUserBoosts(user.id),
+    getFinalBetsData(user.id),
   ]);
 
   const initialPredictions: DbPrediction[] = (preds ?? []).map((p) => ({
@@ -77,6 +79,7 @@ export default async function PronosPage() {
         matches={matches}
         initialPredictions={initialPredictions}
         initialBoosts={boosts.byRound}
+        finalBets={finalBets}
       />
       <LivePointsRefresher />
     </div>
