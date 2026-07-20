@@ -24,6 +24,11 @@ function scoreSettled(m: Match): boolean {
   const reg = m.score.regularTime;
   const et = m.score.extraTime;
   const pen = m.score.penalties;
+  // Match allé au-delà de 90' : on EXIGE le score à 90' (regularTime). Sans lui,
+  // fullTime inclut la prolongation/les TAB → on ne peut pas figer le 90' (sinon
+  // on stockerait le fullTime à tort, comme la finale 1-0 a.p. dont le 90' est 0-0).
+  const beyond90 = m.score.duration === "EXTRA_TIME" || m.score.duration === "PENALTY_SHOOTOUT";
+  if (beyond90 && (reg == null || reg.home == null || reg.away == null)) return false;
   if (reg != null) {
     if (h !== (reg.home ?? 0) + (et?.home ?? 0) + (pen?.home ?? 0)) return false;
     if (a !== (reg.away ?? 0) + (et?.away ?? 0) + (pen?.away ?? 0)) return false;
@@ -84,7 +89,18 @@ export async function getResilientMatches(): Promise<Match[]> {
       const so = r.home > r.away ? "H" : r.home < r.away ? "A" : "D";
       const wo =
         live.score.winner === "HOME_TEAM" ? "H" : live.score.winner === "AWAY_TEAM" ? "A" : "D";
-      if (so !== wo) continue; // mémorisé incohérent → on l'écarte (re-capture propre)
+      if (so !== wo) continue; // vainqueur mémorisé ≠ live → on l'écarte (re-capture propre)
+      // Score à 90' mémorisé ≠ 90' live (cas finale figée à tort sur le fullTime a.p.) :
+      // si le live est définitif, on écarte pour re-capturer le bon 90'.
+      const lr = live.score.regularTime;
+      if (
+        lr?.home != null &&
+        lr?.away != null &&
+        scoreSettled(live) &&
+        (r.reg_home !== lr.home || r.reg_away !== lr.away)
+      ) {
+        continue;
+      }
     }
     known.set(r.match_id, {
       home: r.home,

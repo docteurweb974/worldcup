@@ -36,6 +36,8 @@ export interface Match {
   awayTeam: MatchTeam;
   score: {
     winner: "HOME_TEAM" | "AWAY_TEAM" | "DRAW" | null;
+    // « REGULAR » (fini en 90'), « EXTRA_TIME » ou « PENALTY_SHOOTOUT ».
+    duration?: string | null;
     fullTime: { home: number | null; away: number | null };
     halfTime: { home: number | null; away: number | null };
     // Score à la fin du temps réglementaire (90'). Présent seulement quand le
